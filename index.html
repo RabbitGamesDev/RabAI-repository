@@ -1,0 +1,1731 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RabAI</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+* { cursor: none !important; }
+#cursor { position:fixed;top:0;left:0;pointer-events:none;z-index:99999;transform-origin:4px 2px;transition:transform .1s ease; }
+body.cursor-off * { cursor:auto !important; }
+body.cursor-off #cursor { display:none; }
+
+:root {
+  --bg:#0a0a0f;--surface:#0f0f18;--surface2:#16161f;--surface3:#1e1e2a;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.1);
+  --accent:#7c6af7;--accent2:#a594f9;--glow:rgba(124,106,247,0.12);
+  --text:#e2e0f0;--text2:#8a88a0;--text3:#52505e;
+  --green:#4ade80;--red:#f87171;--amber:#fbbf24;
+  --fd:'Syne',sans-serif;--fb:'DM Sans',sans-serif;
+}
+body.light {
+  --bg:#f4f3ff;--surface:#ffffff;--surface2:#f0effe;--surface3:#e8e6fd;
+  --border:rgba(0,0,0,0.07);--border2:rgba(0,0,0,0.12);--glow:rgba(124,106,247,0.08);
+  --text:#1a1830;--text2:#5a5880;--text3:#9896b0;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:15px;line-height:1.6;display:flex;transition:background .2s,color .2s}
+
+.sidebar{width:240px;min-width:240px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:10;transition:width .25s ease,min-width .25s ease,opacity .2s ease}
+.sidebar.collapsed{width:0;min-width:0;opacity:0;overflow:hidden}
+.sidebar-top{padding:16px;border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:9px;margin-bottom:14px}
+.logo-mark{width:28px;height:28px;background:linear-gradient(135deg,#7c6af7,#c084fc);border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-weight:700;font-size:12px;color:white;flex-shrink:0}
+.logo-text{font-family:var(--fd);font-weight:600;font-size:15px}
+.logo-text span{color:var(--accent2)}
+.new-btn{width:100%;padding:9px;background:var(--accent);border:none;border-radius:8px;color:white;font-family:var(--fd);font-size:13px;font-weight:600;cursor:none;transition:opacity .15s;display:flex;align-items:center;justify-content:center;gap:6px}
+.new-btn:hover{opacity:.85}
+.chat-list{flex:1;overflow-y:auto;padding:8px}
+.chat-list::-webkit-scrollbar{width:3px}
+.chat-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.ci{padding:9px 10px;border-radius:8px;cursor:none;transition:background .15s;margin-bottom:2px;position:relative}
+.ci:hover{background:var(--surface2)}
+.ci.active{background:var(--glow);border:1px solid rgba(124,106,247,.2)}
+.ci-name{font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:22px}
+.ci-name-input{font-size:13px;color:var(--text);background:var(--surface3);border:1px solid var(--accent);border-radius:5px;padding:2px 6px;width:calc(100% - 22px);font-family:var(--fb);outline:none}
+.ci-date{font-size:11px;color:var(--text3);margin-top:2px}
+.ci-del{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:20px;height:20px;border-radius:4px;border:none;background:none;color:var(--text3);cursor:none;font-size:16px;display:none;align-items:center;justify-content:center;line-height:1;padding:0}
+.ci:hover .ci-del{display:flex}
+.ci-del:hover{background:rgba(239,68,68,.15);color:var(--red)}
+.sidebar-foot{padding:10px 12px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:6px}
+.foot-label{font-size:10px;color:var(--text3);font-family:var(--fd);letter-spacing:.04em;white-space:nowrap}
+.foot-btns{display:flex;gap:5px}
+.icon-btn{width:26px;height:26px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);cursor:none;display:flex;align-items:center;justify-content:center;transition:all .15s;color:var(--text2);flex-shrink:0}
+.icon-btn:hover{background:var(--glow);border-color:var(--accent);color:var(--accent)}
+.icon-btn svg{width:13px;height:13px}
+
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;gap:10px}
+.topbar-left{display:flex;align-items:center;gap:8px;min-width:0}
+.collapse-btn{width:28px;height:28px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);cursor:none;display:flex;align-items:center;justify-content:center;transition:all .15s;color:var(--text2);flex-shrink:0}
+.collapse-btn:hover{background:var(--glow);border-color:var(--accent);color:var(--accent)}
+.collapse-btn svg{width:14px;height:14px}
+.chat-title{font-family:var(--fd);font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px}
+.plan-badge{font-size:10px;font-weight:600;font-family:var(--fd);padding:2px 8px;border-radius:20px;letter-spacing:.04em;flex-shrink:0}
+.plan-badge.free{background:var(--surface3);color:var(--text2)}
+.plan-badge.pro{background:linear-gradient(135deg,#7c6af7,#c084fc);color:white}
+.status{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);flex-shrink:0}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 5px #4ade80;animation:pulse 2s ease-in-out infinite}
+
+.chat-area{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:18px;scroll-behavior:smooth}
+.chat-area::-webkit-scrollbar{width:4px}
+.chat-area::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+.welcome{display:flex;flex-direction:column;align-items:center;text-align:center;padding:40px 24px;gap:14px;animation:fadeUp .5s ease both;margin:auto}
+.w-icon{width:52px;height:52px;background:linear-gradient(135deg,#7c6af7,#c084fc);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px}
+.welcome h1{font-family:var(--fd);font-size:22px;font-weight:700;letter-spacing:-.5px}
+.welcome h1 span{color:var(--accent2)}
+.welcome p{font-size:13px;color:var(--text2);max-width:360px;line-height:1.65}
+.starters{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;max-width:440px;margin-top:6px}
+.starter{font-size:12px;padding:7px 13px;background:var(--surface2);border:1px solid var(--border2);border-radius:20px;color:var(--text2);cursor:none;transition:all .15s}
+.starter:hover{background:var(--glow);border-color:var(--accent);color:var(--accent2)}
+
+.msg{display:flex;gap:10px;max-width:700px;width:100%;margin:0 auto;animation:fadeUp .25s ease both}
+.msg.user{flex-direction:row-reverse}
+.av{width:28px;height:28px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;margin-top:2px;font-family:var(--fd)}
+.av.ai-av{background:linear-gradient(135deg,#7c6af7,#c084fc);color:white}
+.av.usr-av{background:var(--surface3);border:1px solid var(--border2);color:var(--text2)}
+.bub{padding:11px 15px;font-size:14px;line-height:1.7;max-width:calc(100% - 38px)}
+.msg.ai .bub{background:var(--surface2);border:1px solid var(--border);border-radius:4px 12px 12px 12px;color:var(--text)}
+.msg.user .bub{background:var(--glow);border:1px solid rgba(124,106,247,.2);border-radius:12px 4px 12px 12px;color:var(--text)}
+.bub p{margin-bottom:7px}.bub p:last-child{margin-bottom:0}
+.bub strong{color:var(--accent2);font-weight:500}
+.bub pre{background:var(--surface3);border:1px solid var(--border2);border-radius:8px;padding:12px 12px 12px 12px;margin:8px 0;overflow-x:auto;font-size:12px;font-family:monospace;color:var(--text2);white-space:pre-wrap;position:relative;padding-top:32px}
+.copy-code-btn{position:absolute;top:6px;right:6px;font-size:10px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border2);border-radius:5px;color:var(--text3);cursor:none;font-family:var(--fb);transition:all .15s}
+.copy-code-btn:hover{color:var(--accent2);border-color:var(--accent)}
+.bub code{background:var(--surface3);padding:1px 5px;border-radius:4px;font-size:12px;font-family:monospace;color:var(--accent2)}
+
+.typing{display:flex;align-items:center;gap:4px;padding:12px 15px}
+.typing span{width:5px;height:5px;border-radius:50%;background:var(--text3);animation:bounce 1.2s ease-in-out infinite}
+.typing span:nth-child(2){animation-delay:.2s}
+.typing span:nth-child(3){animation-delay:.4s}
+
+.input-area{padding:12px 20px 16px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.cmd-area{max-width:700px;margin:0 auto 6px;position:relative}
+.cmd-menu{background:var(--surface);border:1px solid var(--border2);border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.3);animation:fadeUp .15s ease both}
+.cmd-item{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:none;transition:background .12s}
+.cmd-item:hover,.cmd-item.ci-active{background:var(--glow)}
+.cmd-key{font-family:var(--fd);font-size:12px;font-weight:700;color:var(--accent2);min-width:100px}
+.cmd-desc{font-size:12px;color:var(--text2)}
+.cmd-hint-bar{font-size:10px;color:var(--text3);padding:6px 14px;border-top:1px solid var(--border)}
+.cmd-active-bar{padding:5px 14px;background:var(--glow);border:1px solid rgba(124,106,247,.2);border-radius:8px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--accent2);font-family:var(--fd)}
+.cmd-active-bar button{background:none;border:none;color:var(--text3);font-size:14px;cursor:none;padding:0 2px;line-height:1}
+.cmd-active-bar button:hover{color:var(--red)}
+.input-wrap{display:flex;gap:8px;align-items:flex-end;background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:9px 9px 9px 15px;transition:border-color .15s,box-shadow .15s;max-width:700px;margin:0 auto}
+.input-wrap:focus-within{border-color:rgba(124,106,247,.5);box-shadow:0 0 0 3px var(--glow)}
+textarea{flex:1;background:none;border:none;outline:none;color:var(--text);font-family:var(--fb);font-size:14px;line-height:1.6;resize:none;min-height:22px;max-height:120px;overflow-y:auto;cursor:none}
+textarea::placeholder{color:var(--text3)}
+.send-btn{width:32px;height:32px;border-radius:7px;background:var(--accent);border:none;cursor:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;color:white}
+.send-btn:hover:not(:disabled){background:var(--accent2);transform:scale(1.05)}
+.send-btn:disabled{opacity:.25;cursor:none;transform:none}
+.hint{text-align:center;font-size:10px;color:var(--text3);margin-top:6px;max-width:700px;margin-left:auto;margin-right:auto}
+.err-bar{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:var(--red);padding:9px 14px;border-radius:8px;font-size:13px;text-align:center;max-width:700px;margin:0 auto}
+.mod-warn{padding:10px 16px;border-radius:10px;font-size:13px;display:flex;align-items:center;gap:8px;max-width:700px;margin:0 auto;animation:fadeUp .3s ease both}
+.mod-warn.orange{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);color:var(--amber)}
+.mod-warn.red{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--red)}
+
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:100;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:460px;max-height:85vh;overflow-y:auto;animation:fadeUp .2s ease both}
+.modal.sm{max-width:360px}
+.modal.lg{max-width:520px}
+.modal::-webkit-scrollbar{width:3px}
+.modal::-webkit-scrollbar-thumb{background:var(--border2)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:20px 20px 0}
+.modal-head h2{font-family:var(--fd);font-size:17px;font-weight:600}
+.modal-close{width:28px;height:28px;border-radius:7px;border:1px solid var(--border2);background:var(--surface2);cursor:none;display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:18px;line-height:1;transition:all .15s}
+.modal-close:hover{background:rgba(239,68,68,.1);color:var(--red);border-color:rgba(239,68,68,.3)}
+.modal-body{padding:20px}
+.s-section{margin-bottom:22px}
+.s-section:last-child{margin-bottom:0}
+.s-title{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;font-family:var(--fd)}
+.acct-card{background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:14px;display:flex;align-items:center;gap:12px}
+.acct-av{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#7c6af7,#c084fc);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-weight:700;font-size:16px;color:white;flex-shrink:0}
+.acct-name{font-size:14px;font-weight:500}
+.acct-email{font-size:12px;color:var(--text3);margin-top:1px}
+.plan-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.plan-card{background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:14px;cursor:none;transition:all .15s;position:relative}
+.plan-card:hover{border-color:var(--accent)}
+.plan-card.selected{border-color:var(--accent);background:var(--glow)}
+.plan-card.selected::after{content:'';position:absolute;top:8px;right:8px;width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.pc-name{font-family:var(--fd);font-size:13px;font-weight:600;margin-bottom:3px}
+.pc-model{font-size:11px;color:var(--text3);margin-bottom:5px}
+.pc-price{font-size:13px;font-weight:500}
+.pc-price.fp{color:var(--green)}
+.pc-price.pp{color:var(--accent2)}
+.pc-feat{margin-top:7px;font-size:11px;color:var(--text2);line-height:1.6}
+.s-row{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px}
+.s-row:last-child{margin-bottom:0}
+.s-label{font-size:13px;font-weight:500}
+.s-sub{font-size:11px;color:var(--text3);margin-top:1px}
+.toggle{width:36px;height:20px;background:var(--border2);border-radius:10px;position:relative;cursor:none;transition:background .2s;flex-shrink:0;border:none}
+.toggle.on{background:var(--accent)}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:white;transition:transform .2s}
+.toggle.on::after{transform:translateX(16px)}
+.s-select{background:var(--surface3);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-family:var(--fb);font-size:12px;padding:5px 8px;outline:none;cursor:none}
+.s-select option{background:var(--surface)}
+.danger-btn{width:100%;padding:10px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;color:var(--red);font-family:var(--fb);font-size:13px;font-weight:500;cursor:none;transition:all .15s}
+.danger-btn:hover{background:rgba(239,68,68,.15)}
+.confirm-body{padding:20px;text-align:center}
+.confirm-icon{font-size:32px;margin-bottom:12px}
+.confirm-title{font-family:var(--fd);font-size:16px;font-weight:600;margin-bottom:8px}
+.confirm-text{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:20px}
+.confirm-btns{display:flex;gap:8px}
+.confirm-btns button{flex:1;padding:10px;border-radius:8px;border:none;font-family:var(--fb);font-size:13px;font-weight:500;cursor:none;transition:all .15s}
+.btn-cancel{background:var(--surface2);border:1px solid var(--border2) !important;color:var(--text2)}
+.btn-cancel:hover{background:var(--surface3)}
+.btn-danger{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3) !important;color:var(--red)}
+.btn-danger:hover{background:rgba(239,68,68,.25)}
+.info-section{margin-bottom:20px}
+.info-section:last-child{margin-bottom:0}
+.info-badge{display:inline-block;font-size:10px;font-weight:600;font-family:var(--fd);padding:2px 8px;border-radius:20px;background:var(--glow);color:var(--accent2);border:1px solid rgba(124,106,247,.2);margin-bottom:8px;letter-spacing:.04em;text-transform:uppercase}
+.info-section h3{font-family:var(--fd);font-size:15px;font-weight:600;margin-bottom:8px}
+.info-section p{font-size:13px;color:var(--text2);line-height:1.7}
+.changelog-item{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)}
+.changelog-item:last-child{border-bottom:none;padding-bottom:0}
+.cl-version{font-family:var(--fd);font-size:11px;font-weight:600;color:var(--accent2);background:var(--glow);border:1px solid rgba(124,106,247,.2);padding:2px 7px;border-radius:5px;flex-shrink:0;margin-top:1px}
+.cl-title{font-size:13px;font-weight:500;margin-bottom:2px}
+.cl-desc{font-size:12px;color:var(--text3);line-height:1.5}
+
+.ban-screen{position:fixed;inset:0;background:var(--bg);z-index:200;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:24px}
+.ban-icon{font-size:48px}
+.ban-title{font-family:var(--fd);font-size:22px;font-weight:700;color:var(--red)}
+.ban-text{font-size:14px;color:var(--text2);max-width:380px;line-height:1.65}
+.ban-timer{font-family:var(--fd);font-size:32px;font-weight:700;color:var(--accent2)}
+.ban-sub{font-size:12px;color:var(--text3)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes bounce{0%,60%,100%{transform:translateY(0);opacity:.3}30%{transform:translateY(-4px);opacity:1}}
+
+/* ── LOGIN SCREEN ───────────────────────────────── */
+.login-screen{position:fixed;inset:0;background:var(--bg);z-index:300;display:flex;align-items:center;justify-content:center;padding:24px;animation:fadeUp .4s ease both}
+.login-box{max-width:400px;width:100%;text-align:center}
+.login-logo{width:64px;height:64px;background:linear-gradient(135deg,#7c6af7,#c084fc);border-radius:18px;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-weight:700;font-size:28px;color:white;margin:0 auto 20px}
+.login-title{font-family:var(--fd);font-size:24px;font-weight:700;margin-bottom:6px}
+.login-title span{color:var(--accent2)}
+.login-sub{font-size:13px;color:var(--text2);margin-bottom:28px;line-height:1.6}
+.login-divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--text3);font-size:12px}
+.login-divider::before,.login-divider::after{content:'';flex:1;height:1px;background:var(--border2)}
+.login-input{width:100%;padding:11px 14px;background:var(--surface2);border:1px solid var(--border2);border-radius:9px;color:var(--text);font-family:var(--fb);font-size:14px;outline:none;margin-bottom:8px;transition:border-color .15s}
+.login-input:focus{border-color:var(--accent)}
+.login-input::placeholder{color:var(--text3)}
+.login-btn{width:100%;padding:12px;border:none;border-radius:9px;font-family:var(--fd);font-size:14px;font-weight:600;cursor:none;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px}
+.login-btn.primary{background:var(--accent);color:white}
+.login-btn.primary:hover{opacity:.85}
+
+.login-btn:disabled{opacity:.4;cursor:none}
+.login-switch{font-size:12px;color:var(--text3);margin-top:12px}
+.login-switch span{color:var(--accent2);cursor:none}
+.login-switch span:hover{text-decoration:underline}
+.login-error{font-size:12px;color:var(--red);background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);padding:8px 12px;border-radius:7px;margin-bottom:8px;display:none}
+.login-success{font-size:12px;color:var(--green);background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);padding:8px 12px;border-radius:7px;margin-bottom:8px;display:none}
+.waitlist-btn{width:100%;padding:10px;background:linear-gradient(135deg,rgba(124,106,247,.15),rgba(165,148,249,.1));border:1px solid rgba(124,106,247,.3);border-radius:9px;color:var(--accent2);font-family:var(--fd);font-size:13px;font-weight:600;cursor:none;transition:all .15s;margin-top:8px}
+.waitlist-btn:hover{background:linear-gradient(135deg,rgba(124,106,247,.25),rgba(165,148,249,.2))}
+.admin-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;font-family:var(--fd);padding:2px 8px;border-radius:20px;background:linear-gradient(135deg,#f59e0b,#ef4444);color:white;letter-spacing:.04em;margin-left:6px}
+</style>
+</head>
+<body>
+
+<div id="cursor">
+  <svg width="18" height="20" viewBox="0 0 18 20" fill="none">
+    <path d="M2 2L16 10L9 12L6 18Q4.5 19.5 3.5 18L2 2Z" fill="#7c6af7" stroke="#a594f9" stroke-width="1" stroke-linejoin="round"/>
+    <path d="M2 2Q4 16 6 18" fill="none" stroke="#a594f9" stroke-width="0.8" stroke-linecap="round"/>
+  </svg>
+</div>
+
+
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">R</div>
+    <div class="login-title">Rab<span>AI</span></div>
+    <div class="login-sub" id="login-sub">Tu co-productor indie. Inicia sesion para continuar.</div>
+
+    <!-- Email login -->
+    <div id="login-err" class="login-error"></div>
+    <div id="login-ok" class="login-success"></div>
+    <input class="login-input" id="login-email" type="email" placeholder="tu@email.com"/>
+    <input class="login-input" id="login-pass" type="password" placeholder="Contrasena"/>
+    <button class="login-btn primary" id="email-btn" onclick="loginEmail()">Iniciar sesion</button>
+    <div class="login-switch" id="login-switch-txt">No tienes cuenta? <span onclick="toggleSignup()">Registrate</span></div>
+
+
+  </div>
+</div>
+
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-top">
+    <div class="logo"><div class="logo-mark">R</div><div class="logo-text">Rab<span>AI</span></div></div>
+    <button class="new-btn" id="new-btn">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span id="new-btn-txt">Nuevo chat</span>
+    </button>
+  </div>
+  <div class="chat-list" id="chat-list"></div>
+  <div class="sidebar-foot">
+    <span class="foot-label" id="foot-label">RabGamesStudio v3.1</span>
+    <div class="foot-btns">
+      <button class="icon-btn" id="info-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="8" stroke-width="3"/><line x1="12" y1="12" x2="12" y2="17"/></svg>
+      </button>
+      <button class="icon-btn" id="settings-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="collapse-btn" id="collapse-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+      </button>
+      <div class="chat-title" id="chat-title">RabAI</div>
+      <span class="plan-badge free" id="plan-badge">FREE</span>
+    </div>
+    <div class="status"><div class="dot"></div><span id="online-txt">Online</span>&nbsp;<span id="model-label">Llama 3.1 8B</span></div>
+  </div>
+  <div class="chat-area" id="chat-area"></div>
+  <div class="input-area">
+    <div class="cmd-area" id="cmd-area" style="display:none">
+      <div id="cmd-active-bar" style="display:none" class="cmd-active-bar">
+        <span id="cmd-active-label"></span>
+        <button onclick="clearCmd()">x</button>
+      </div>
+      <div class="cmd-menu" id="cmd-menu" style="display:none"></div>
+    </div>
+    <div class="input-wrap">
+      <textarea id="inp" rows="1" placeholder="Cuentame tu idea de juego..."></textarea>
+      <button class="send-btn" id="sbtn" disabled>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg>
+      </button>
+    </div>
+    <div class="hint" id="hint-txt">RabAI puede cometer errores.</div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="overlay" id="settings-overlay">
+  <div class="modal">
+    <div class="modal-head"><h2 id="s-title-txt">Ajustes</h2><button class="modal-close" data-close="settings-overlay">x</button></div>
+    <div class="modal-body">
+      <div class="s-section">
+        <div class="s-title" id="s-acct-lbl">Cuenta</div>
+        <div class="acct-card"><div class="acct-av">R</div><div><div class="acct-name" id="s-user-lbl">Usuario RabAI</div><div class="acct-email" id="s-email-lbl">Local - sin cuenta conectada</div></div></div>
+      </div>
+      <div class="s-section">
+        <div class="s-title" id="s-plan-lbl">Plan activo</div>
+        <div class="plan-grid">
+          <div class="plan-card selected" id="card-free">
+            <div class="pc-name">Free</div><div class="pc-model">Llama 3.1 8B</div>
+            <div class="pc-price fp" id="s-free-price">Gratis</div>
+            <div class="pc-feat" id="s-free-feat">Chats ilimitados<br>Modelo rapido</div>
+          </div>
+          <div class="plan-card" id="card-pro">
+            <div class="pc-name">Pro</div><div class="pc-model">Llama 3.3 70B</div>
+            <div class="pc-price pp" id="s-pro-price">$15 USD/mes</div>
+            <div class="pc-feat" id="s-pro-feat">Modelo mas inteligente<br>Respuestas profundas</div>
+          </div>
+        </div>
+      </div>
+      <div class="s-section" id="waitlist-section">
+        <div class="s-title">Lista de espera Pro</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.6">El plan Pro usa Llama 3.3 70B, el modelo mas inteligente. Unete a la lista y te avisamos cuando este disponible.</div>
+        <button class="waitlist-btn" id="waitlist-btn" onclick="joinWaitlist()">✨ Unirse a lista de espera Pro</button>
+      </div>
+      <div class="s-section">
+        <div class="s-title" id="s-appear-lbl">Apariencia</div>
+        <div class="s-row"><div><div class="s-label" id="s-dark-lbl">Tema oscuro</div><div class="s-sub" id="s-dark-sub">Cambia entre claro y oscuro</div></div><button class="toggle on" id="theme-toggle" onclick="toggleTheme()"></button></div>
+        <div class="s-row"><div><div class="s-label" id="s-cursor-lbl">Cursor personalizado</div><div class="s-sub" id="s-cursor-sub">Cursor propio de RabAI</div></div><button class="toggle on" id="cursor-toggle" onclick="toggleCursor()"></button></div>
+      </div>
+      <div class="s-section">
+        <div class="s-title" id="s-ia-lbl">Comportamiento de la IA</div>
+        <div class="s-row"><div><div class="s-label" id="s-tone-lbl">Tono</div><div class="s-sub" id="s-tone-sub">Como se comunica RabAI</div></div>
+          <select class="s-select" id="tone-sel" onchange="saveS('tone',this.value)">
+            <option value="cercano" id="tone-cercano">Cercano</option>
+            <option value="formal" id="tone-formal">Formal</option>
+            <option value="directo" id="tone-directo">Directo</option>
+            <option value="motivador" id="tone-motivador">Motivador</option>
+          </select>
+        </div>
+        <div class="s-row"><div><div class="s-label" id="s-lang-lbl">Idioma</div><div class="s-sub" id="s-lang-sub">Interfaz y respuestas de la IA</div></div>
+          <select class="s-select" id="lang-sel" onchange="changeLang(this.value)">
+            <option value="auto">Auto</option>
+            <option value="es">Espanol</option>
+            <option value="en">English</option>
+            <option value="pt">Portugues</option>
+            <option value="fr">Francais</option>
+            <option value="de">Deutsch</option>
+            <option value="ja">Japanese</option>
+            <option value="zh">Chinese</option>
+          </select>
+        </div>
+      </div>
+      <div class="s-section"><div class="s-title" id="s-data-lbl">Datos</div><button class="danger-btn" id="clear-all-btn" style="margin-bottom:8px">Borrar todos los chats</button><button class="danger-btn" onclick="logOut()" style="background:rgba(124,106,247,.08);border-color:rgba(124,106,247,.3);color:var(--accent2)">Cerrar sesion</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- INFO -->
+<div class="overlay" id="info-overlay">
+  <div class="modal lg">
+    <div class="modal-head"><h2>RabAI</h2><button class="modal-close" data-close="info-overlay">x</button></div>
+    <div class="modal-body">
+      <div class="info-section"><div class="info-badge" id="info-badge1">Acerca de</div><h3 id="info-h1">Que es RabAI?</h3><p id="info-p1">RabAI es un co-productor de IA creado por RabGamesStudio, disenado exclusivamente para desarrolladores de videojuegos independientes. Entiende las limitaciones reales del mundo indie: trabajar solo, con presupuesto cero y tiempo limitado.</p></div>
+      <div class="info-section"><div class="info-badge" id="info-badge2">Mision</div><h3 id="info-h2">Para que sirve?</h3><p id="info-p2">Transforma ideas vagas en proyectos documentados y viables. Desde el analisis de mercado hasta la estrategia de lanzamiento: concepto, disenio, scope, motor recomendado, GDD, roadmap y marketing.</p></div>
+      <div class="info-section"><div class="info-badge" id="info-badge3">Comandos</div><h3 id="info-h3">Comandos disponibles</h3><p id="info-cmd-list" style="font-size:12px;color:var(--text2);line-height:2">/auditoria — Analiza debilidades del proyecto<br>/gancho — Genera elevator pitches y angulo viral<br>/loop — Valida y mejora el core loop<br>/balance — Calcula balance de dificultad<br>/devlog — Convierte notas en post atractivo<br>/target — Simula un tipo de jugador especifico</p></div>
+      <div class="info-section"><div class="info-badge" id="info-badge4">Actualizaciones</div><h3 id="info-h4">Historial de versiones</h3>
+        <div class="changelog-item"><span class="cl-version">v4.0</span><div><div class="cl-title" id="cl-title-40">Login con Supabase, admin badge, lista de espera Pro</div><div class="cl-desc" id="cl-desc-40">Sistema de cuentas real, perfil admin con Pro vitalicio, waitlist para plan Pro, cierre de sesion.</div></div></div>
+        <div class="changelog-item"><span class="cl-version">v3.1</span><div><div class="cl-title" id="cl-title-31">Moderacion mejorada, i18n completo, fix de comandos</div><div class="cl-desc" id="cl-desc-31">Sistema de deteccion de contenido mas robusto, traduccion completa de la interfaz, correcciones generales.</div></div></div>
+        <div class="changelog-item"><span class="cl-version">v3.0</span><div><div class="cl-title" id="cl-title-30">Cursor, sidebar colapsable, comandos, info modal</div><div class="cl-desc" id="cl-desc-30">Cursor personalizado, deteccion de idioma del sistema, nombres de chat inteligentes, sistema de comandos /.</div></div></div>
+        <div class="changelog-item"><span class="cl-version">v2.0</span><div><div class="cl-title" id="cl-title-20">Settings, temas, planes, multi-idioma</div><div class="cl-desc" id="cl-desc-20">Panel de ajustes, tema claro/oscuro, tono de IA, planes Free/Pro.</div></div></div>
+        <div class="changelog-item"><span class="cl-version">v1.0</span><div><div class="cl-title" id="cl-title-10">Lanzamiento inicial</div><div class="cl-desc" id="cl-desc-10">Chat funcional con IA real via Groq, multiples chats guardados, diseno dark.</div></div></div>
+      </div>
+      <div class="info-section"><div class="info-badge" id="info-badge5">Legal</div><h3 id="info-h5">Terminos y privacidad</h3><p id="info-p5">RabAI es propiedad exclusiva de RabGamesStudio. Prohibido el uso para contenido adulto, violento extremo o ilegal. RabGamesStudio puede suspender cuentas que violen estos terminos.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div class="overlay" id="confirm-overlay">
+  <div class="modal sm">
+    <div class="confirm-body">
+      <div class="confirm-icon">&#128465;</div>
+      <div class="confirm-title" id="confirm-title">Borrar chat</div>
+      <div class="confirm-text" id="confirm-text">Esta accion no se puede deshacer.</div>
+      <div class="confirm-btns"><button class="btn-cancel" id="confirm-cancel">Cancelar</button><button class="btn-danger" id="confirm-ok">Borrar</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- BAN SCREEN -->
+<div class="ban-screen" id="ban-screen">
+  <div class="ban-icon">&#128683;</div>
+  <div class="ban-title" id="ban-title">Cuenta suspendida</div>
+  <div class="ban-text" id="ban-text">Has violado las politicas de uso de RabAI.</div>
+  <div class="ban-timer" id="ban-timer">1:00</div>
+  <div class="ban-sub" id="ban-sub">Segundos restantes</div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+//  1. Abre con Bloc de notas
+//  2. Ctrl+F busca: TU_API_KEY_AQUI
+//  3. Reemplaza con tu key de console.groq.com
+//  4. Ctrl+S y abre en Chrome
+// ══════════════════════════════════════════════════
+
+var SUPABASE_URL = 'https://gjxyweszlqpfmcnqimqk.supabase.co';
+var SUPABASE_ANON = 'sb_publishable_l86Pc13sU6hKJJ6mwNm68A_z3jftgbB';
+// ══════════════════════════════════════════════════
+
+var MODELS = { free: 'llama-3.1-8b-instant', pro: 'llama-3.3-70b-versatile' };
+
+// ── I18N ─────────────────────────────────────────
+var I18N = {
+  es: {
+    newChat:'Nuevo chat', placeholder:'Cuentame tu idea de juego...', hint:'RabAI puede cometer errores.',
+    welcome_title:'Hola, soy', welcome_sub:'Tu co-productor indie. Cuentame tu idea y te ayudo a convertirla en un proyecto real y viable.',
+    s1:'Que genero indie funciona mejor ahora?', s2:'Tengo una idea vaga, por donde empiezo?',
+    s3:'Es viable un roguelike para un solo dev?', s4:'Ayudame a crear un GDD para mi juego',
+    del_title:'Borrar chat', del_text:'Esta accion eliminara el chat y todo su contenido. No se puede deshacer.',
+    del_ok:'Borrar', del_cancel:'Cancelar', clear_title:'Borrar todos los chats',
+    clear_text:'Se eliminaran todos tus chats. Esta accion no se puede deshacer.',
+    you:'TU', noChats:'Sin chats aun', settings:'Ajustes', account:'Cuenta', plan:'Plan activo',
+    appearance:'Apariencia', darkTheme:'Tema oscuro', darkSub:'Cambia entre claro y oscuro',
+    customCursor:'Cursor personalizado', cursorSub:'Cursor propio de RabAI',
+    iaBehavior:'Comportamiento de la IA', tone:'Tono', toneSub:'Como se comunica RabAI',
+    language:'Idioma', langSub:'Interfaz y respuestas de la IA', data:'Datos',
+    clearBtn:'Borrar todos los chats', localUser:'Usuario RabAI', localEmail:'Local - sin cuenta conectada',
+    freeFeat:'Chats ilimitados<br>Modelo rapido', proFeat:'Modelo mas inteligente<br>Respuestas profundas',
+    freePlan:'Gratis', proPlan:'$15 USD/mes', online:'Online', foot:'RabGamesStudio v3.1',
+    ban_title:'Cuenta suspendida', ban_text:'Has violado las politicas de uso de RabAI.',
+    ban_sub:'Segundos restantes para recuperar acceso',
+    warn_orange:'<strong>Aviso:</strong> Contenido que viola las politicas de RabAI detectado. Cambia el tema.',
+    warn_red:'<strong>Advertencia final:</strong> Ultimo aviso antes de suspension de acceso.',
+    cmdHint:'Tab o Enter para seleccionar · Esc para cerrar',
+    copyCode:'Copiar', copied:'Copiado!',
+    info_badge1:'Acerca de', info_h1:'Que es RabAI?',
+    info_p1:'RabAI es un co-productor de IA creado por RabGamesStudio, disenado para desarrolladores de videojuegos independientes. Entiende las limitaciones reales del mundo indie: trabajar solo, con presupuesto cero y tiempo limitado.',
+    info_badge2:'Mision', info_h2:'Para que sirve?',
+    info_p2:'Transforma ideas vagas en proyectos documentados y viables. Desde el analisis de mercado hasta la estrategia de lanzamiento: concepto, disenio, scope, motor recomendado, GDD, roadmap y marketing.',
+    info_badge3:'Comandos', info_h3:'Comandos disponibles',
+    info_cmd:'/auditoria — Analiza debilidades del proyecto<br>/gancho — Genera elevator pitches y angulo viral<br>/loop — Valida y mejora el core loop<br>/balance — Calcula balance de dificultad<br>/devlog — Convierte notas en post atractivo<br>/target — Simula un tipo de jugador especifico',
+    info_badge4:'Actualizaciones', info_h4:'Historial de versiones',
+    info_badge5:'Legal', info_h5:'Terminos y privacidad',
+    info_p5:'RabAI es propiedad exclusiva de RabGamesStudio. Prohibido el uso para contenido adulto, violento extremo o ilegal. RabGamesStudio puede suspender cuentas que violen estos terminos.',
+    cmd_auditoria_desc:'Analiza debilidades y riesgos del proyecto',
+    cmd_gancho_desc:'Genera 3 elevator pitches y angulo viral',
+    cmd_loop_desc:'Analiza y mejora el core loop',
+    cmd_balance_desc:'Calcula si el juego es muy facil o dificil',
+    cmd_devlog_desc:'Convierte notas en un DevLog atractivo',
+    cmd_target_desc:'RabAI actua como un tipo de jugador especifico',
+    cl_40_title:'Login con Supabase, admin badge, lista de espera Pro',
+    cl_40_desc:'Sistema de cuentas real, perfil admin con Pro vitalicio, waitlist para plan Pro.',
+    cl_31_title:'Moderacion mejorada, i18n completo, fix de comandos',
+    cl_31_desc:'Deteccion de contenido mas robusta, traduccion completa, correcciones generales.',
+    cl_30_title:'Cursor, sidebar colapsable, comandos, info modal',
+    cl_30_desc:'Cursor personalizado, deteccion de idioma del sistema, nombres de chat inteligentes.',
+    cl_20_title:'Settings, temas, planes, multi-idioma',
+    cl_20_desc:'Panel de ajustes, tema claro/oscuro, tono de IA, planes Free/Pro.',
+    cl_10_title:'Lanzamiento inicial',
+    cl_10_desc:'Chat funcional con IA real via Groq, multiples chats guardados, diseno dark.',
+    login_sub:'Tu co-productor indie. Inicia sesion para continuar.',
+    login_btn:'Iniciar sesion',
+    signup_btn:'Crear cuenta',
+    login_switch_login:'No tienes cuenta? <span onclick="toggleSignup()">Registrate</span>',
+    login_switch_signup:'Ya tienes cuenta? <span onclick="toggleSignup()">Inicia sesion</span>',
+    tone_cercano:'Cercano', tone_formal:'Formal', tone_directo:'Directo', tone_motivador:'Motivador'
+  },
+  en: {
+    newChat:'New chat', placeholder:'Tell me your game idea...', hint:'RabAI can make mistakes.',
+    welcome_title:'Hi, I am', welcome_sub:'Your indie co-producer. Tell me your idea and I will help you turn it into a real, viable project.',
+    s1:'What indie genre works best right now?', s2:'I have a vague idea, where do I start?',
+    s3:'Is a roguelike viable for a solo dev?', s4:'Help me create a GDD for my game',
+    del_title:'Delete chat', del_text:'This will permanently delete the chat and all its content.',
+    del_ok:'Delete', del_cancel:'Cancel', clear_title:'Delete all chats',
+    clear_text:'All your chats will be deleted. This cannot be undone.',
+    you:'YOU', noChats:'No chats yet', settings:'Settings', account:'Account', plan:'Active plan',
+    appearance:'Appearance', darkTheme:'Dark theme', darkSub:'Switch between light and dark',
+    customCursor:'Custom cursor', cursorSub:'RabAI branded cursor',
+    iaBehavior:'AI behavior', tone:'Tone', toneSub:'How RabAI communicates',
+    language:'Language', langSub:'Interface and AI language', data:'Data',
+    clearBtn:'Delete all chats', localUser:'RabAI User', localEmail:'Local - no account connected',
+    freeFeat:'Unlimited chats<br>Fast model', proFeat:'Smarter model<br>Deeper answers',
+    freePlan:'Free', proPlan:'$15 USD/mo', online:'Online', foot:'RabGamesStudio v3.1',
+    ban_title:'Account suspended', ban_text:'You have violated RabAI usage policies.',
+    ban_sub:'Seconds remaining until access is restored',
+    warn_orange:'<strong>Warning:</strong> Content violating RabAI policies detected. Change the topic.',
+    warn_red:'<strong>Final warning:</strong> One more attempt will result in suspension.',
+    cmdHint:'Tab or Enter to select · Esc to close',
+    copyCode:'Copy', copied:'Copied!',
+    info_badge1:'About', info_h1:'What is RabAI?',
+    info_p1:'RabAI is an AI co-producer created by RabGamesStudio, designed exclusively for indie game developers. It understands the real limitations of the indie world: working alone, zero budget, limited time.',
+    info_badge2:'Mission', info_h2:'What is it for?',
+    info_p2:'Transforms vague ideas into documented, viable projects. From market analysis to launch strategy: concept, design, scope, recommended engine, GDD, roadmap and marketing.',
+    info_badge3:'Commands', info_h3:'Available commands',
+    info_cmd:'/auditoria — Analyzes project weaknesses<br>/gancho — Generates elevator pitches and viral angle<br>/loop — Validates and improves the core loop<br>/balance — Calculates difficulty balance<br>/devlog — Turns notes into an attractive DevLog<br>/target — Simulates a specific player type',
+    info_badge4:'Updates', info_h4:'Version history',
+    info_badge5:'Legal', info_h5:'Terms and privacy',
+    info_p5:'RabAI is the exclusive property of RabGamesStudio. Prohibited for adult, extremely violent or illegal content. RabGamesStudio may suspend accounts that violate these terms.',
+    cmd_auditoria_desc:'Analyze project weaknesses and risks',
+    cmd_gancho_desc:'Generate 3 elevator pitches and viral angle',
+    cmd_loop_desc:'Analyze and improve the core loop',
+    cmd_balance_desc:'Calculate if the game is too easy or hard',
+    cmd_devlog_desc:'Turn notes into an attractive DevLog',
+    cmd_target_desc:'RabAI acts as a specific player type',
+    cl_40_title:'Supabase login, admin badge, Pro waitlist',
+    cl_40_desc:'Real account system, admin profile with lifetime Pro, Pro plan waitlist.',
+    cl_31_title:'Improved moderation, full i18n, command fixes',
+    cl_31_desc:'Stronger content detection, complete interface translation, general fixes.',
+    cl_30_title:'Cursor, collapsible sidebar, commands, info modal',
+    cl_30_desc:'Custom cursor, system language detection, smart chat names, / commands.',
+    cl_20_title:'Settings, themes, plans, multi-language',
+    cl_20_desc:'Full settings panel, light/dark theme, AI tone, Free/Pro plans.',
+    cl_10_title:'Initial launch',
+    cl_10_desc:'Functional AI chat via Groq, multiple saved chats, dark design.',
+    login_sub:'Your indie co-producer. Sign in to continue.',
+    login_btn:'Sign in',
+    signup_btn:'Create account',
+    login_switch_login:'No account? <span onclick="toggleSignup()">Sign up</span>',
+    login_switch_signup:'Already have an account? <span onclick="toggleSignup()">Sign in</span>',
+    tone_cercano:'Friendly', tone_formal:'Formal', tone_directo:'Direct', tone_motivador:'Motivating'
+  },
+  pt: {
+    newChat:'Novo chat', placeholder:'Conta-me a tua ideia de jogo...', hint:'RabAI pode cometer erros.',
+    welcome_title:'Ola, sou', welcome_sub:'O teu co-produtor indie. Conta-me a tua ideia.',
+    s1:'Que genero indie funciona melhor agora?', s2:'Tenho uma ideia vaga, por onde comecar?',
+    s3:'Um roguelike e viavel para um dev solo?', s4:'Ajuda-me a criar um GDD',
+    del_title:'Apagar chat', del_text:'Esta acao apagara o chat permanentemente.',
+    del_ok:'Apagar', del_cancel:'Cancelar', clear_title:'Apagar todos os chats',
+    clear_text:'Todos os chats serao apagados. Nao pode ser desfeito.',
+    you:'TU', noChats:'Sem chats', settings:'Ajustes', account:'Conta', plan:'Plano ativo',
+    appearance:'Aparencia', darkTheme:'Tema escuro', darkSub:'Alternar entre claro e escuro',
+    customCursor:'Cursor personalizado', cursorSub:'Cursor proprio de RabAI',
+    iaBehavior:'Comportamento da IA', tone:'Tom', toneSub:'Como RabAI se comunica',
+    language:'Idioma', langSub:'Idioma da interface e da IA', data:'Dados',
+    clearBtn:'Apagar todos os chats', localUser:'Usuario RabAI', localEmail:'Local - sem conta conectada',
+    freeFeat:'Chats ilimitados<br>Modelo rapido', proFeat:'Modelo mais inteligente<br>Respostas mais profundas',
+    freePlan:'Gratis', proPlan:'$15 USD/mes', online:'Online', foot:'RabGamesStudio v3.1',
+    ban_title:'Conta suspensa', ban_text:'Violaste as politicas de uso do RabAI.',
+    ban_sub:'Segundos restantes para recuperar o acesso',
+    warn_orange:'<strong>Aviso:</strong> Conteudo proibido detectado. Muda o tema.',
+    warn_red:'<strong>Aviso final:</strong> Mais uma tentativa resultara em suspensao.',
+    cmdHint:'Tab ou Enter para selecionar · Esc para fechar',
+    copyCode:'Copiar', copied:'Copiado!',
+    info_badge1:'Sobre', info_h1:'O que e RabAI?',
+    info_p1:'RabAI e um co-produtor de IA criado pela RabGamesStudio, desenhado para developers de jogos indie. Entende as limitacoes reais do mundo indie: trabalhar sozinho, orcamento zero, tempo limitado.',
+    info_badge2:'Missao', info_h2:'Para que serve?',
+    info_p2:'Transforma ideias vagas em projetos documentados e viaveis. Do analise de mercado ate a estrategia de lancamento: conceito, design, scope, motor recomendado, GDD, roadmap e marketing.',
+    info_badge3:'Comandos', info_h3:'Comandos disponiveis',
+    info_cmd:'/auditoria — Analisa pontos fracos do projeto<br>/gancho — Gera elevator pitches e angulo viral<br>/loop — Valida e melhora o core loop<br>/balance — Calcula o balanco de dificuldade<br>/devlog — Converte notas em DevLog atrativo<br>/target — Simula um tipo especifico de jogador',
+    info_badge4:'Atualizacoes', info_h4:'Historico de versoes',
+    info_badge5:'Legal', info_h5:'Termos e privacidade',
+    info_p5:'RabAI e propriedade exclusiva da RabGamesStudio. Proibido para conteudo adulto ou ilegal. A RabGamesStudio pode suspender contas que violem estes termos.',
+    cmd_auditoria_desc:'Analisa pontos fracos e riscos do projeto',
+    cmd_gancho_desc:'Gera 3 elevator pitches e angulo viral',
+    cmd_loop_desc:'Analisa e melhora o core loop',
+    cmd_balance_desc:'Calcula se o jogo e muito facil ou dificil',
+    cmd_devlog_desc:'Converte notas num DevLog atrativo',
+    cmd_target_desc:'RabAI atua como um tipo especifico de jogador',
+    cl_40_title:'Login com Supabase, badge admin, lista de espera Pro',
+    cl_40_desc:'Sistema de contas real, perfil admin com Pro vitalicio, lista de espera Pro.',
+    cl_31_title:'Moderacao melhorada, i18n completo, correccoes de comandos',
+    cl_31_desc:'Deteccao de conteudo mais robusta, traducao completa, correccoes gerais.',
+    cl_30_title:'Cursor, sidebar colapsavel, comandos, modal info',
+    cl_30_desc:'Cursor personalizado, deteccao de idioma do sistema, nomes de chat inteligentes.',
+    cl_20_title:'Ajustes, temas, planos, multi-idioma',
+    cl_20_desc:'Painel de ajustes, tema claro/escuro, tom de IA, planos Free/Pro.',
+    cl_10_title:'Lancamento inicial',
+    cl_10_desc:'Chat de IA funcional via Groq, multiplos chats guardados, design dark.',
+    login_sub:'O teu co-produtor indie. Inicia sessao para continuar.',
+    login_btn:'Iniciar sessao',
+    signup_btn:'Criar conta',
+    login_switch_login:'Sem conta? <span onclick="toggleSignup()">Regista-te</span>',
+    login_switch_signup:'Ja tens conta? <span onclick="toggleSignup()">Inicia sessao</span>',
+    tone_cercano:'Amigavel', tone_formal:'Formal', tone_directo:'Direto', tone_motivador:'Motivador'
+  },
+  fr: {
+    newChat:'Nouveau chat', placeholder:'Dis-moi ton idee de jeu...', hint:'RabAI peut faire des erreurs.',
+    welcome_title:'Bonjour, je suis', welcome_sub:'Ton co-producteur indie. Dis-moi ton idee.',
+    s1:'Quel genre indie marche le mieux?', s2:'Idee vague, par ou commencer?',
+    s3:'Un roguelike est viable en solo?', s4:'Aide-moi a creer un GDD',
+    del_title:'Supprimer chat', del_text:'Cette action supprimera definitivement le chat.',
+    del_ok:'Supprimer', del_cancel:'Annuler', clear_title:'Supprimer tous les chats',
+    clear_text:'Tous vos chats seront supprimes. Impossible d annuler.',
+    you:'TOI', noChats:'Aucun chat', settings:'Parametres', account:'Compte', plan:'Plan actif',
+    appearance:'Apparence', darkTheme:'Theme sombre', darkSub:'Basculer entre clair et sombre',
+    customCursor:'Curseur personnalise', cursorSub:'Curseur de RabAI',
+    iaBehavior:'Comportement IA', tone:'Ton', toneSub:'Comment RabAI communique',
+    language:'Langue', langSub:'Langue de l interface et de l IA', data:'Donnees',
+    clearBtn:'Supprimer tous les chats', localUser:'Utilisateur RabAI', localEmail:'Local - sans compte connecte',
+    freeFeat:'Chats illimites<br>Modele rapide', proFeat:'Modele plus intelligent<br>Reponses approfondies',
+    freePlan:'Gratuit', proPlan:'$15 USD/mois', online:'En ligne', foot:'RabGamesStudio v3.1',
+    ban_title:'Compte suspendu', ban_text:'Vous avez viole les politiques de RabAI.',
+    ban_sub:'Secondes restantes pour recuperer l acces',
+    warn_orange:'<strong>Avertissement:</strong> Contenu interdit detecte. Changez de sujet.',
+    warn_red:'<strong>Avertissement final:</strong> Une tentative de plus = suspension.',
+    cmdHint:'Tab ou Entree pour selectionner · Echap pour fermer',
+    copyCode:'Copier', copied:'Copie!',
+    info_badge1:'A propos', info_h1:'Qu est-ce que RabAI?',
+    info_p1:'RabAI est un co-producteur IA cree par RabGamesStudio, concu pour les developpeurs de jeux independants. Il comprend les vraies limites du monde indie: travailler seul, budget zero, temps limite.',
+    info_badge2:'Mission', info_h2:'A quoi ca sert?',
+    info_p2:'Transforme des idees vagues en projets documentes et viables. De l analyse de marche a la strategie de lancement: concept, design, scope, moteur recommande, GDD, roadmap et marketing.',
+    info_badge3:'Commandes', info_h3:'Commandes disponibles',
+    info_cmd:'/auditoria — Analyse les faiblesses du projet<br>/gancho — Genere des pitchs et angle viral<br>/loop — Valide et ameliore le core loop<br>/balance — Calcule l equilibre de difficulte<br>/devlog — Transforme les notes en DevLog<br>/target — Simule un type de joueur specifique',
+    info_badge4:'Mises a jour', info_h4:'Historique des versions',
+    info_badge5:'Legal', info_h5:'Conditions et confidentialite',
+    info_p5:'RabAI est la propriete exclusive de RabGamesStudio. Interdit pour le contenu adulte ou illegal. RabGamesStudio peut suspendre les comptes qui violent ces conditions.',
+    cmd_auditoria_desc:'Analyse les faiblesses et risques du projet',
+    cmd_gancho_desc:'Genere 3 pitchs et angle viral',
+    cmd_loop_desc:'Analyse et ameliore le core loop',
+    cmd_balance_desc:'Calcule si le jeu est trop facile ou difficile',
+    cmd_devlog_desc:'Transforme les notes en DevLog attractif',
+    cmd_target_desc:'RabAI agit comme un type de joueur specifique',
+    cl_40_title:'Connexion Supabase, badge admin, liste d attente Pro',
+    cl_40_desc:'Systeme de comptes reel, profil admin avec Pro a vie, liste d attente Pro.',
+    cl_31_title:'Moderation amelioree, i18n complet, corrections de commandes',
+    cl_31_desc:'Detection de contenu plus robuste, traduction complete, corrections generales.',
+    cl_30_title:'Curseur, sidebar repliable, commandes, modal info',
+    cl_30_desc:'Curseur personnalise, detection de langue systeme, noms de chat intelligents.',
+    cl_20_title:'Parametres, themes, plans, multi-langue',
+    cl_20_desc:'Panneau de parametres, theme clair/sombre, ton IA, plans Free/Pro.',
+    cl_10_title:'Lancement initial',
+    cl_10_desc:'Chat IA fonctionnel via Groq, plusieurs chats sauvegardes, design sombre.',
+    login_sub:'Ton co-producteur indie. Connecte-toi pour continuer.',
+    login_btn:'Se connecter',
+    signup_btn:'Creer un compte',
+    login_switch_login:'Pas de compte? <span onclick="toggleSignup()">S inscrire</span>',
+    login_switch_signup:'Deja un compte? <span onclick="toggleSignup()">Se connecter</span>',
+    tone_cercano:'Amical', tone_formal:'Formel', tone_directo:'Direct', tone_motivador:'Motivant'
+  },
+  de: {
+    newChat:'Neuer Chat', placeholder:'Erzahl mir deine Spielidee...', hint:'RabAI kann Fehler machen.',
+    welcome_title:'Hallo, ich bin', welcome_sub:'Dein Indie-Co-Produzent. Erzahl mir deine Idee.',
+    s1:'Welches Indie-Genre funktioniert am besten?', s2:'Vage Idee, wo anfangen?',
+    s3:'Ist ein Roguelike als Solo-Dev machbar?', s4:'Hilf mir ein GDD zu erstellen',
+    del_title:'Chat loschen', del_text:'Diese Aktion loscht den Chat dauerhaft.',
+    del_ok:'Loschen', del_cancel:'Abbrechen', clear_title:'Alle Chats loschen',
+    clear_text:'Alle Chats werden geloscht. Nicht ruckgangig zu machen.',
+    you:'DU', noChats:'Keine Chats', settings:'Einstellungen', account:'Konto', plan:'Aktiver Plan',
+    appearance:'Aussehen', darkTheme:'Dunkles Design', darkSub:'Zwischen hell und dunkel wechseln',
+    customCursor:'Benutzerdefinierter Cursor', cursorSub:'RabAI Cursor',
+    iaBehavior:'KI-Verhalten', tone:'Ton', toneSub:'Wie RabAI kommuniziert',
+    language:'Sprache', langSub:'Sprache der Oberflache und KI', data:'Daten',
+    clearBtn:'Alle Chats loschen', localUser:'RabAI Benutzer', localEmail:'Lokal - kein Konto verbunden',
+    freeFeat:'Unbegrenzte Chats<br>Schnelles Modell', proFeat:'Intelligenteres Modell<br>Tiefere Antworten',
+    freePlan:'Kostenlos', proPlan:'$15 USD/Monat', online:'Online', foot:'RabGamesStudio v3.1',
+    ban_title:'Konto gesperrt', ban_text:'Sie haben die Nutzungsrichtlinien von RabAI verletzt.',
+    ban_sub:'Verbleibende Sekunden bis zur Wiederherstellung',
+    warn_orange:'<strong>Warnung:</strong> Verbotener Inhalt erkannt. Anderung des Themas erforderlich.',
+    warn_red:'<strong>Letzte Warnung:</strong> Ein weiterer Versuch fuhrt zur Sperrung.',
+    cmdHint:'Tab oder Eingabe zum Auswahlen · Esc zum Schliessen',
+    copyCode:'Kopieren', copied:'Kopiert!',
+    info_badge1:'Uber', info_h1:'Was ist RabAI?',
+    info_p1:'RabAI ist ein KI-Co-Produzent von RabGamesStudio, speziell fur Indie-Spieleentwickler. Es versteht die echten Einschrankungen der Indie-Welt: alleine arbeiten, kein Budget, begrenzte Zeit.',
+    info_badge2:'Mission', info_h2:'Wofur ist es?',
+    info_p2:'Verwandelt vage Ideen in dokumentierte, realisierbare Projekte. Von der Marktanalyse bis zur Launchstrategie: Konzept, Design, Scope, empfohlene Engine, GDD, Roadmap und Marketing.',
+    info_badge3:'Befehle', info_h3:'Verfugbare Befehle',
+    info_cmd:'/auditoria — Analysiert Projektschwachen<br>/gancho — Generiert Elevator Pitches und viralen Winkel<br>/loop — Validiert und verbessert den Core Loop<br>/balance — Berechnet Schwierigkeitsbalance<br>/devlog — Wandelt Notizen in DevLog um<br>/target — Simuliert einen bestimmten Spielertyp',
+    info_badge4:'Updates', info_h4:'Versionshistorie',
+    info_badge5:'Rechtliches', info_h5:'Nutzungsbedingungen',
+    info_p5:'RabAI ist Eigentum von RabGamesStudio. Verboten fur erwachsene oder illegale Inhalte. RabGamesStudio kann Konten bei Verstosen sperren.',
+    cmd_auditoria_desc:'Projektschwachen und Risiken analysieren',
+    cmd_gancho_desc:'3 Elevator Pitches und viralen Winkel generieren',
+    cmd_loop_desc:'Core Loop analysieren und verbessern',
+    cmd_balance_desc:'Schwierigkeitsbalance berechnen',
+    cmd_devlog_desc:'Notizen in attraktiven DevLog umwandeln',
+    cmd_target_desc:'RabAI agiert als bestimmter Spielertyp',
+    cl_40_title:'Supabase-Login, Admin-Badge, Pro-Warteliste',
+    cl_40_desc:'Echtes Kontosystem, Admin-Profil mit lebenslangem Pro, Pro-Warteliste.',
+    cl_31_title:'Verbesserte Moderation, vollstandiges i18n, Befehlskorrekturen',
+    cl_31_desc:'Robustere Inhaltserkennung, vollstandige Ubersetzung, allgemeine Korrekturen.',
+    cl_30_title:'Cursor, einklappbare Sidebar, Befehle, Info-Modal',
+    cl_30_desc:'Benutzerdefinierter Cursor, Systemspracherkennung, intelligente Chat-Namen.',
+    cl_20_title:'Einstellungen, Themen, Plane, Mehrsprachigkeit',
+    cl_20_desc:'Einstellungsbereich, Hell/Dunkel-Thema, KI-Ton, Free/Pro-Plane.',
+    cl_10_title:'Erster Start',
+    cl_10_desc:'Funktionaler KI-Chat via Groq, mehrere gespeicherte Chats, dunkles Design.',
+    login_sub:'Dein Indie-Co-Produzent. Melde dich an, um fortzufahren.',
+    login_btn:'Anmelden',
+    signup_btn:'Konto erstellen',
+    login_switch_login:'Kein Konto? <span onclick="toggleSignup()">Registrieren</span>',
+    login_switch_signup:'Schon ein Konto? <span onclick="toggleSignup()">Anmelden</span>',
+    tone_cercano:'Freundlich', tone_formal:'Formal', tone_directo:'Direkt', tone_motivador:'Motivierend'
+  },
+  ja: {
+    newChat:'新しいチャット', placeholder:'ゲームのアイデアを教えてください...', hint:'RabAIは間違えることがあります。',
+    welcome_title:'こんにちは、私は', welcome_sub:'あなたのインディー共同プロデューサーです。',
+    s1:'今最も人気のインディーゲームジャンルは？', s2:'アイデアがあるけど、どこから始める？',
+    s3:'ソロ開発でローグライクは可能？', s4:'GDD作成を手伝ってください',
+    del_title:'チャットを削除', del_text:'このチャットは完全に削除されます。',
+    del_ok:'削除', del_cancel:'キャンセル', clear_title:'全チャット削除',
+    clear_text:'全てのチャットが削除されます。元に戻せません。',
+    you:'あなた', noChats:'チャットなし', settings:'設定', account:'アカウント', plan:'現在のプラン',
+    appearance:'外観', darkTheme:'ダークテーマ', darkSub:'明暗切替',
+    customCursor:'カスタムカーソル', cursorSub:'RabAIカーソル',
+    iaBehavior:'AIの動作', tone:'トーン', toneSub:'RabAIの話し方',
+    language:'言語', langSub:'インターフェースとAIの言語', data:'データ',
+    clearBtn:'全チャット削除', localUser:'RabAIユーザー', localEmail:'ローカル - アカウント未接続',
+    freeFeat:'無制限チャット<br>高速モデル', proFeat:'より賢いモデル<br>より深い回答',
+    freePlan:'無料', proPlan:'$15 USD/月', online:'オンライン', foot:'RabGamesStudio v3.1',
+    ban_title:'アカウント停止', ban_text:'RabAIの利用規約に違反しました。',
+    ban_sub:'アクセス回復までの残り秒数',
+    warn_orange:'<strong>警告:</strong> 禁止コンテンツが検出されました。',
+    warn_red:'<strong>最終警告:</strong> 次の試みは停止につながります。',
+    cmdHint:'TabまたはEnterで選択 · Escで閉じる',
+    copyCode:'コピー', copied:'コピー済み!',
+    info_badge1:'概要', info_h1:'RabAIとは？',
+    info_p1:'RabAIはRabGamesStudioが作成したAIコプロデューサーで、インディーゲーム開発者専用に設計されています。一人での作業、予算ゼロ、時間の制限など、インディーの現実を理解しています。',
+    info_badge2:'ミッション', info_h2:'何のためにあるの？',
+    info_p2:'漠然としたアイデアを文書化された実現可能なプロジェクトに変換します。市場分析からローンチ戦略まで：コンセプト、デザイン、スコープ、推奨エンジン、GDD、ロードマップ、マーケティング。',
+    info_badge3:'コマンド', info_h3:'利用可能なコマンド',
+    info_cmd:'/auditoria — プロジェクトの弱点を分析<br>/gancho — エレベーターピッチとバイラル角度を生成<br>/loop — コアループを検証・改善<br>/balance — 難易度バランスを計算<br>/devlog — メモをDevLogに変換<br>/target — 特定のプレイヤータイプをシミュレート',
+    info_badge4:'アップデート', info_h4:'バージョン履歴',
+    info_badge5:'法的事項', info_h5:'利用規約とプライバシー',
+    info_p5:'RabAIはRabGamesStudioの独占的財産です。成人向け・違法コンテンツへの使用は禁止されています。',
+    cmd_auditoria_desc:'プロジェクトの弱点とリスクを分析',
+    cmd_gancho_desc:'エレベーターピッチとバイラル角度を生成',
+    cmd_loop_desc:'コアループを分析・改善',
+    cmd_balance_desc:'ゲームが簡単すぎるか難しすぎるか計算',
+    cmd_devlog_desc:'メモを魅力的なDevLogに変換',
+    cmd_target_desc:'特定のプレイヤータイプとしてRabAIが行動',
+    cl_40_title:'Supabaseログイン、管理者バッジ、Proウェイトリスト',
+    cl_40_desc:'実際のアカウントシステム、生涯Proの管理者プロファイル、Proウェイトリスト。',
+    cl_31_title:'モデレーション改善、完全i18n、コマンド修正',
+    cl_31_desc:'より堅牢なコンテンツ検出、完全なインターフェース翻訳、一般的な修正。',
+    cl_30_title:'カーソル、折りたたみサイドバー、コマンド、情報モーダル',
+    cl_30_desc:'カスタムカーソル、システム言語検出、スマートチャット名、/コマンド。',
+    cl_20_title:'設定、テーマ、プラン、多言語',
+    cl_20_desc:'設定パネル、ライト/ダークテーマ、AIトーン、Free/Proプラン。',
+    cl_10_title:'初回リリース',
+    cl_10_desc:'Groq経由の機能的なAIチャット、複数の保存チャット、ダークデザイン。',
+    login_sub:'あなたのインディー共同プロデューサー。続けるにはサインインしてください。',
+    login_btn:'サインイン',
+    signup_btn:'アカウント作成',
+    login_switch_login:'アカウントがない？ <span onclick="toggleSignup()">登録する</span>',
+    login_switch_signup:'すでにアカウントをお持ちですか？ <span onclick="toggleSignup()">サインイン</span>',
+    tone_cercano:'フレンドリー', tone_formal:'フォーマル', tone_directo:'ダイレクト', tone_motivador:'モチベーション'
+  },
+  zh: {
+    newChat:'新对话', placeholder:'告诉我你的游戏想法...', hint:'RabAI可能会犯错误。',
+    welcome_title:'你好，我是', welcome_sub:'你的独立游戏联合制作人。告诉我你的想法。',
+    s1:'现在哪种独立游戏类型最流行？', s2:'我有个模糊的想法，从哪里开始？',
+    s3:'单人开发roguelike可行吗？', s4:'帮我创建游戏设计文档',
+    del_title:'删除对话', del_text:'此操作将永久删除对话及所有内容。',
+    del_ok:'删除', del_cancel:'取消', clear_title:'删除所有对话',
+    clear_text:'所有对话将被删除，无法撤销。',
+    you:'你', noChats:'暂无对话', settings:'设置', account:'账户', plan:'当前套餐',
+    appearance:'外观', darkTheme:'深色主题', darkSub:'切换明暗主题',
+    customCursor:'自定义光标', cursorSub:'RabAI专属光标',
+    iaBehavior:'AI行为', tone:'语气', toneSub:'RabAI的沟通方式',
+    language:'语言', langSub:'界面和AI语言', data:'数据',
+    clearBtn:'删除所有对话', localUser:'RabAI用户', localEmail:'本地 - 未连接账户',
+    freeFeat:'无限对话<br>快速模型', proFeat:'更智能的模型<br>更深入的回答',
+    freePlan:'免费', proPlan:'$15 美元/月', online:'在线', foot:'RabGamesStudio v3.1',
+    ban_title:'账户已暂停', ban_text:'您违反了RabAI的使用政策。',
+    ban_sub:'距恢复访问的剩余秒数',
+    warn_orange:'<strong>警告：</strong>检测到违禁内容。请更改话题。',
+    warn_red:'<strong>最终警告：</strong>再次尝试将导致暂停。',
+    cmdHint:'Tab或Enter选择 · Esc关闭',
+    copyCode:'复制', copied:'已复制!',
+    info_badge1:'关于', info_h1:'什么是RabAI？',
+    info_p1:'RabAI是RabGamesStudio创建的AI联合制作人，专为独立游戏开发者设计。它了解独立开发的真实限制：独自工作、零预算、时间有限。',
+    info_badge2:'使命', info_h2:'有什么用？',
+    info_p2:'将模糊的想法转化为有据可查的可行项目。从市场分析到发布策略：概念、设计、范围、推荐引擎、GDD、路线图和营销。',
+    info_badge3:'命令', info_h3:'可用命令',
+    info_cmd:'/auditoria — 分析项目弱点<br>/gancho — 生成电梯简报和病毒式角度<br>/loop — 验证和改进核心循环<br>/balance — 计算难度平衡<br>/devlog — 将笔记转化为DevLog<br>/target — 模拟特定玩家类型',
+    info_badge4:'更新', info_h4:'版本历史',
+    info_badge5:'法律', info_h5:'条款和隐私',
+    info_p5:'RabAI是RabGamesStudio的独家财产。禁止用于成人或非法内容。RabGamesStudio可以暂停违反这些条款的账户。',
+    cmd_auditoria_desc:'分析项目弱点和风险',
+    cmd_gancho_desc:'生成3个电梯简报和病毒式角度',
+    cmd_loop_desc:'分析和改进核心循环',
+    cmd_balance_desc:'计算游戏是否太容易或太难',
+    cmd_devlog_desc:'将笔记转化为有吸引力的DevLog',
+    cmd_target_desc:'RabAI作为特定玩家类型行动',
+    cl_40_title:'Supabase登录、管理员徽章、Pro候补名单',
+    cl_40_desc:'真实账户系统、终身Pro管理员资料、Pro计划候补名单。',
+    cl_31_title:'改进审核、完整i18n、命令修复',
+    cl_31_desc:'更强大的内容检测、完整界面翻译、一般修复。',
+    cl_30_title:'光标、可折叠侧边栏、命令、信息弹窗',
+    cl_30_desc:'自定义光标、系统语言检测、智能聊天名称、/命令。',
+    cl_20_title:'设置、主题、计划、多语言',
+    cl_20_desc:'设置面板、明/暗主题、AI语气、免费/专业计划。',
+    cl_10_title:'初始发布',
+    cl_10_desc:'通过Groq的功能性AI聊天、多个保存的对话、深色设计。',
+    login_sub:'你的独立游戏联合制作人。登录以继续。',
+    login_btn:'登录',
+    signup_btn:'创建账户',
+    login_switch_login:'没有账户？ <span onclick="toggleSignup()">注册</span>',
+    login_switch_signup:'已有账户？ <span onclick="toggleSignup()">登录</span>',
+    tone_cercano:'友好', tone_formal:'正式', tone_directo:'直接', tone_motivador:'激励'
+  }
+};
+
+var TONES = {
+  cercano:'Usa un tono cercano y amigable, como un colega de confianza. Informal pero siempre profesional.',
+  formal:'Usa un tono formal y profesional. Lenguaje preciso y estructurado.',
+  directo:'Se extremadamente directo y conciso. Sin rodeos. Ve al punto siempre.',
+  motivador:'Se energetico y motivador. Celebra el progreso sin perder honestidad.'
+};
+var LANGS_AI = {
+  auto:'Detecta automaticamente el idioma del usuario y responde siempre en ese mismo idioma.',
+  es:'Responde siempre en espanol.',
+  en:'Always respond in English regardless of the language the user writes in.',
+  pt:'Responda sempre em portugues.',
+  fr:'Repondez toujours en francais.',
+  de:'Antworte immer auf Deutsch.',
+  ja:'常に日本語で返答してください。',
+  zh:'请始终用中文回复。'
+};
+
+var COMMANDS = [
+  { cmd:'/auditoria', icon:'🔍', desc_key:'cmd_auditoria' },
+  { cmd:'/gancho',    icon:'🎯', desc_key:'cmd_gancho' },
+  { cmd:'/loop',      icon:'🔄', desc_key:'cmd_loop' },
+  { cmd:'/balance',   icon:'⚖️',  desc_key:'cmd_balance' },
+  { cmd:'/devlog',    icon:'📝', desc_key:'cmd_devlog' },
+  { cmd:'/target',    icon:'🎓', desc_key:'cmd_target' },
+];
+var CMD_DESC = {
+  cmd_auditoria:'Analiza debilidades y riesgos del proyecto',
+  cmd_gancho:'Genera 3 elevator pitches y angulo viral',
+  cmd_loop:'Analiza y mejora el core loop',
+  cmd_balance:'Calcula si el juego es muy facil o dificil',
+  cmd_devlog:'Convierte notas en un DevLog atractivo',
+  cmd_target:'RabAI actua como un tipo de jugador especifico'
+};
+var CMD_PROMPTS = {
+  '/auditoria':'MODO AUDITORIA ACTIVADO. Actua como inversor de riesgo. Busca: saturacion de mercado, mecanicas aburridas, scope excesivo, falta de diferenciacion, problemas de monetizacion. Lista ALERTAS ROJAS ordenadas por impacto. Se honesto sin piedad pero constructivo.',
+  '/gancho':'MODO GENERADOR DE GANCHO. Genera: 3 elevator pitches (max 2 oraciones cada uno), 1 angulo para TikTok/Reels viral, 1 frase de una linea que capture la esencia unica del juego.',
+  '/loop':'MODO VALIDADOR DE CORE LOOP. Analiza la mecanica principal. Evalua ciclo Accion-Recompensa-Mejora. Detecta si es repetitivo y sugiere Capas de Complejidad para enganchar al jugador mas alla de 5 minutos.',
+  '/balance':'MODO BALANCEO. El usuario dara datos numericos. Analiza si favorece demasiado al jugador o es injusto. Da recomendaciones con numeros concretos para equilibrar la experiencia.',
+  '/devlog':'MODO DEVLOG. Transforma notas tecnicas del dia en post atractivo para GameJolt o Twitter/X. Tono emocionante, menciona progreso real, termina con gancho para el siguiente update.',
+  '/target':'MODO SIMULADOR DE AUDIENCIA. El usuario definira un tipo de jugador. Responde y evalua el juego DESDE LA PERSPECTIVA de ese jugador. Se critico, entusiasta o indiferente segun el perfil genuinamente pensaria.'
+};
+
+// ── MODERATION ───────────────────────────────────
+var BAD_WORDS = [
+  'porno','porn','xxx','hentai','nsfw','erotic','erotico','erotica',
+  'desnudo','desnuda','nude','naked','stripper',
+  'pene','vagina','vulva','polla','verga','pito',
+  'tetas','senos','pechos desnudos',
+  'follar','coger','sexo','hacer el amor','masturbac','orgasmo','eyacular',
+  'gore','tortura','mutilar','snuff','rape','violacion','abuso sexual',
+  'juego porno','juego sexual','juego adulto','visual novel adulto','adult game',
+  'dating sim adulto','18+ game','adult content','contenido adulto',
+  'hago un juego de','crear juego de sexo','videojuego erotico',
+  'loli','shota','menor desnudo'
+];
+
+var warnLevel = 0;
+var BAN_MS = 60 * 1000;
+var banInterval = null;
+
+function checkMod(text) {
+  var low = text.toLowerCase();
+  for (var i = 0; i < BAD_WORDS.length; i++) {
+    if (low.indexOf(BAD_WORDS[i]) !== -1) return true;
+  }
+  return false;
+}
+
+function showModWarn(level) {
+  document.querySelectorAll('.mod-warn').forEach(function(el) { el.remove(); });
+  var div = document.createElement('div');
+  div.className = level === 1 ? 'mod-warn orange' : 'mod-warn red';
+  div.innerHTML = '<span style="font-size:16px">' + (level === 1 ? '⚠️' : '🚫') + '</span><span>' + tStr(level === 1 ? 'warn_orange' : 'warn_red') + '</span>';
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+  setTimeout(function() { if (div.parentNode) div.remove(); }, 10000);
+}
+
+function triggerBan() {
+  warnLevel = 0;
+  var until = Date.now() + BAN_MS;
+  saveS('ban_until', until.toString());
+  startBanScreen(until);
+}
+
+function startBanScreen(until) {
+  if (!until) until = parseInt(getS('ban_until') || '0');
+  if (!until || Date.now() >= until) return;
+  var screen = document.getElementById('ban-screen');
+  screen.style.display = 'flex';
+  if (banInterval) clearInterval(banInterval);
+  function tick() {
+    var rem = Math.max(0, Math.ceil((until - Date.now()) / 1000));
+    var m = Math.floor(rem / 60), s = rem % 60;
+    document.getElementById('ban-timer').textContent = m + ':' + (s < 10 ? '0' : '') + s;
+    if (rem <= 0) {
+      screen.style.display = 'none';
+      saveS('ban_until', '0');
+      clearInterval(banInterval);
+    }
+  }
+  tick();
+  banInterval = setInterval(tick, 1000);
+}
+
+// ── STORAGE ──────────────────────────────────────
+function getS(k) { try { return localStorage.getItem('rab_' + k); } catch(e) { return null; } }
+function saveS(k, v) { try { localStorage.setItem('rab_' + k, v); } catch(e) {} }
+
+// ── LANG ─────────────────────────────────────────
+function detectSysLang() {
+  var nav = (navigator.language || 'es').toLowerCase().slice(0, 2);
+  var ok = ['es','en','pt','fr','de','ja','zh'];
+  return ok.indexOf(nav) >= 0 ? nav : 'es';
+}
+function getLang() {
+  var s = getS('lang');
+  if (s && s !== 'auto') return s;
+  return detectSysLang();
+}
+function tStr(key) { var l = getLang(); return (I18N[l] || I18N.es)[key] || (I18N.es[key] || key); }
+
+function applyI18N() {
+  function el(id) { return document.getElementById(id); }
+  function set(id, key, asHtml) { var e = el(id); if (!e) return; if (asHtml) e.innerHTML = tStr(key); else e.textContent = tStr(key); }
+  function attr(id, a, key) { var e = el(id); if (e) e[a] = tStr(key); }
+  attr('inp', 'placeholder', 'placeholder');
+  set('hint-txt', 'hint');
+  set('new-btn-txt', 'newChat');
+  set('s-title-txt', 'settings');
+  set('s-acct-lbl', 'account');
+  set('s-user-lbl', 'localUser');
+  set('s-email-lbl', 'localEmail');
+  set('s-plan-lbl', 'plan');
+  set('s-appear-lbl', 'appearance');
+  set('s-dark-lbl', 'darkTheme');
+  set('s-dark-sub', 'darkSub');
+  set('s-cursor-lbl', 'customCursor');
+  set('s-cursor-sub', 'cursorSub');
+  set('s-ia-lbl', 'iaBehavior');
+  set('s-tone-lbl', 'tone');
+  set('s-tone-sub', 'toneSub');
+  set('s-lang-lbl', 'language');
+  set('s-lang-sub', 'langSub');
+  set('s-data-lbl', 'data');
+  set('clear-all-btn', 'clearBtn');
+  set('foot-label', 'foot');
+  set('online-txt', 'online');
+  set('ban-title', 'ban_title');
+  set('ban-text', 'ban_text');
+  set('ban-sub', 'ban_sub');
+  set('s-free-price', 'freePlan');
+  set('s-pro-price', 'proPlan');
+  set('s-free-feat', 'freeFeat', true);
+  set('s-pro-feat', 'proFeat', true);
+  set('tone-cercano', 'tone_cercano');
+  set('tone-formal', 'tone_formal');
+  set('tone-directo', 'tone_directo');
+  set('tone-motivador', 'tone_motivador');
+  // Info modal
+  set('info-badge1', 'info_badge1'); set('info-h1', 'info_h1'); set('info-p1', 'info_p1');
+  set('info-badge2', 'info_badge2'); set('info-h2', 'info_h2'); set('info-p2', 'info_p2');
+  set('info-badge3', 'info_badge3'); set('info-h3', 'info_h3'); set('info-cmd-list', 'info_cmd', true);
+  set('info-badge4', 'info_badge4'); set('info-h4', 'info_h4');
+  set('info-badge5', 'info_badge5'); set('info-h5', 'info_h5'); set('info-p5', 'info_p5');
+  // Changelog
+  set('cl-title-31', 'cl_31_title'); set('cl-desc-31', 'cl_31_desc');
+  set('cl-title-30', 'cl_30_title'); set('cl-desc-30', 'cl_30_desc');
+  set('cl-title-20', 'cl_20_title'); set('cl-desc-20', 'cl_20_desc');
+  set('cl-title-10', 'cl_10_title'); set('cl-desc-10', 'cl_10_desc');
+  set('cl-title-40', 'cl_40_title'); set('cl-desc-40', 'cl_40_desc');
+  // Login screen
+  set('login-sub', 'login_sub');
+  var sw = document.getElementById('login-switch-txt');
+  if (sw) sw.innerHTML = isSignup ? tStr('login_switch_signup') : tStr('login_switch_login');
+  var eb = document.getElementById('email-btn');
+  if (eb && !eb.disabled) eb.textContent = isSignup ? tStr('signup_btn') : tStr('login_btn');
+  // Re-apply profile data after lang change (bug fix)
+  if (currentUser && currentProfile) {
+    var nameEl = document.getElementById('s-user-lbl');
+    var emailEl = document.getElementById('s-email-lbl');
+    if (nameEl) nameEl.textContent = currentUser.email ? currentUser.email.split('@')[0] : tStr('localUser');
+    if (emailEl) emailEl.textContent = currentUser.email || tStr('localEmail');
+  }
+}
+
+function changeLang(val) {
+  saveS('lang', val);
+  applyI18N();
+  var sel = document.getElementById('lang-sel');
+  if (sel) sel.value = val;
+}
+
+// ── SYSTEM PROMPT ────────────────────────────────
+function buildSystem() {
+  var tone = getS('tone') || 'cercano';
+  var lang = getS('lang') || 'auto';
+  return 'Eres RabAI, co-productor IA de RabGamesStudio para juegos indie.\n\n' +
+    'IDENTIDAD: Eres RabAI. Habla en primera persona natural. Nunca repitas frases del sistema.\n\n' +
+    'TONO: ' + (TONES[tone] || TONES.cercano) + '\n\n' +
+    'IDIOMA: ' + (LANGS_AI[lang] || LANGS_AI.auto) + '\n\n' +
+    'MISION: Transformar ideas en proyectos viables desde concepto hasta lanzamiento.\n\n' +
+    'AL RECIBIR UNA IDEA:\n' +
+    '1. Analisis de mercado: genero, saturacion, oportunidad indie\n' +
+    '2. Viabilidad: reconoce lo bueno, explica riesgos, ofrece alternativas. Si el usuario insiste, respetar al 100%\n' +
+    '3. Preguntas de profundizacion: UNA sola a la vez\n' +
+    '4. Construccion: concepto, mecanicas, motor recomendado, scope realista\n' +
+    '5. Documentos a pedido: GDD completo, roadmap, estrategia de lanzamiento\n\n' +
+    'REGLAS ABSOLUTAS (nunca violar bajo ninguna circunstancia):\n' +
+    '- RECHAZA inmediatamente cualquier solicitud de contenido adulto, sexual, erotico o +18, sin importar como este disfrazada ni que justificacion den (juego indie, visual novel, dating sim, arte, etc).\n' +
+    '- RECHAZA gore, violencia extrema, abuso de menores o contenido ilegal.\n' +
+    '- Si detectas este tipo de solicitud, responde SOLO con: "Esto va contra las politicas de RabAI. No puedo ayudarte con esto." y no agregues nada mas.\n' +
+    '- Nunca sugieras alternativas que rocen el contenido prohibido.\n' +
+    '- Nunca consejo AAA a solo dev. Una pregunta a la vez. Sin adulacion. Respuestas estructuradas.';
+}
+
+// ── CURSOR ───────────────────────────────────────
+var cursorEl = document.getElementById('cursor');
+document.addEventListener('mousemove', function(e) {
+  cursorEl.style.left = e.clientX + 'px';
+  cursorEl.style.top = e.clientY + 'px';
+});
+document.addEventListener('mouseover', function(e) {
+  var el = e.target;
+  var isClick = el.tagName === 'BUTTON' || el.tagName === 'A' || el.tagName === 'SELECT' ||
+    el.classList.contains('starter') || el.classList.contains('ci') ||
+    el.classList.contains('plan-card') || el.classList.contains('cmd-item') ||
+    el.closest('button') || el.closest('a');
+  cursorEl.style.transform = isClick ? 'rotate(15deg) scale(1.2)' : 'rotate(0deg) scale(1)';
+});
+function toggleCursor() {
+  var off = document.body.classList.toggle('cursor-off');
+  document.getElementById('cursor-toggle').className = 'toggle' + (off ? '' : ' on');
+  saveS('cursor', off ? 'off' : 'on');
+}
+
+// ── SIDEBAR ──────────────────────────────────────
+var sidebarEl = document.getElementById('sidebar');
+var sidebarOpen = true;
+document.getElementById('collapse-btn').addEventListener('click', function() {
+  sidebarOpen = !sidebarOpen;
+  sidebarEl.className = 'sidebar' + (sidebarOpen ? '' : ' collapsed');
+  saveS('sidebar', sidebarOpen ? 'open' : 'closed');
+});
+
+// ── THEME ────────────────────────────────────────
+function toggleTheme() {
+  var light = document.body.classList.toggle('light');
+  document.getElementById('theme-toggle').className = 'toggle' + (light ? '' : ' on');
+  saveS('theme', light ? 'light' : 'dark');
+}
+function applyTheme() {
+  if ((getS('theme') || 'dark') === 'light') {
+    document.body.classList.add('light');
+    document.getElementById('theme-toggle').className = 'toggle';
+  }
+}
+
+// ── PLAN ─────────────────────────────────────────
+function setPlan(p) {
+  saveS('plan', p);
+  document.getElementById('card-free').className = 'plan-card' + (p === 'free' ? ' selected' : '');
+  document.getElementById('card-pro').className = 'plan-card' + (p === 'pro' ? ' selected' : '');
+  var badge = document.getElementById('plan-badge');
+  var lbl = document.getElementById('model-label');
+  if (p === 'free') { badge.className = 'plan-badge free'; badge.textContent = 'FREE'; lbl.textContent = 'Llama 3.1 8B'; }
+  else { badge.className = 'plan-badge pro'; badge.textContent = 'PRO'; lbl.textContent = 'Llama 3.3 70B'; }
+}
+
+// ── MODALS ───────────────────────────────────────
+function openModal(id) { document.getElementById(id).className = 'overlay open'; }
+function closeModal(id) { document.getElementById(id).className = 'overlay'; }
+document.querySelectorAll('.modal-close').forEach(function(btn) {
+  btn.addEventListener('click', function() { closeModal(btn.getAttribute('data-close')); });
+});
+document.querySelectorAll('.overlay').forEach(function(ov) {
+  ov.addEventListener('click', function(e) { if (e.target === ov) ov.className = 'overlay'; });
+});
+document.getElementById('settings-btn').addEventListener('click', function() {
+  setPlan(getS('plan') || 'free');
+  document.getElementById('tone-sel').value = getS('tone') || 'cercano';
+  document.getElementById('lang-sel').value = getS('lang') || 'auto';
+  openModal('settings-overlay');
+});
+document.getElementById('info-btn').addEventListener('click', function() { openModal('info-overlay'); });
+
+// ── CONFIRM ──────────────────────────────────────
+var pendingCb = null;
+function showConfirm(title, text, okTxt, cancelTxt, cb) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-text').textContent = text;
+  document.getElementById('confirm-ok').textContent = okTxt;
+  document.getElementById('confirm-cancel').textContent = cancelTxt;
+  pendingCb = cb;
+  openModal('confirm-overlay');
+}
+document.getElementById('confirm-ok').addEventListener('click', function() {
+  closeModal('confirm-overlay');
+  if (pendingCb) { pendingCb(); pendingCb = null; }
+});
+document.getElementById('confirm-cancel').addEventListener('click', function() {
+  closeModal('confirm-overlay'); pendingCb = null;
+});
+document.getElementById('clear-all-btn').addEventListener('click', function() {
+  showConfirm(tStr('clear_title'), tStr('clear_text'), tStr('del_ok'), tStr('del_cancel'), function() {
+    chats = {}; saveChats(); closeModal('settings-overlay'); newChat();
+  });
+});
+
+// ── COMMANDS ─────────────────────────────────────
+var activeCmd = null;
+var cmdIdx = 0;
+var cmdVisible = false;
+
+function getCmdFiltered(val) {
+  return COMMANDS.filter(function(c) { return c.cmd.startsWith(val.trim()); });
+}
+
+function renderCmdMenu(filtered) {
+  var menu = document.getElementById('cmd-menu');
+  var area = document.getElementById('cmd-area');
+  if (!filtered.length) { hideCmdMenu(); return; }
+  menu.innerHTML = '';
+  filtered.forEach(function(c, i) {
+    var item = document.createElement('div');
+    item.className = 'cmd-item' + (i === cmdIdx ? ' ci-active' : '');
+    item.setAttribute('data-cmd', c.cmd);
+    item.innerHTML = '<span class="cmd-key">' + c.icon + ' ' + c.cmd + '</span><span class="cmd-desc">' + (tStr(c.desc_key.replace('cmd_','cmd_') + '_desc') || CMD_DESC[c.desc_key] || '') + '</span>';
+    item.addEventListener('click', function() { selectCmd(c.cmd); });
+    menu.appendChild(item);
+  });
+  var hint = document.createElement('div');
+  hint.className = 'cmd-hint-bar';
+  hint.textContent = tStr('cmdHint');
+  menu.appendChild(hint);
+  menu.style.display = 'block';
+  area.style.display = 'block';
+  cmdVisible = true;
+}
+
+function hideCmdMenu() {
+  document.getElementById('cmd-menu').style.display = 'none';
+  if (!activeCmd) document.getElementById('cmd-area').style.display = 'none';
+  cmdVisible = false; cmdIdx = 0;
+}
+
+function selectCmd(cmd) {
+  inp.value = cmd + ' ';
+  hideCmdMenu();
+  activeCmd = cmd;
+  var bar = document.getElementById('cmd-active-bar');
+  var lbl = document.getElementById('cmd-active-label');
+  var obj = COMMANDS.find(function(c) { return c.cmd === cmd; });
+  lbl.textContent = (obj ? obj.icon + ' ' + cmd : cmd) + ' activo';
+  bar.style.display = 'flex';
+  document.getElementById('cmd-area').style.display = 'block';
+  inp.focus();
+}
+
+function clearCmd() {
+  activeCmd = null;
+  document.getElementById('cmd-active-bar').style.display = 'none';
+  document.getElementById('cmd-area').style.display = 'none';
+  inp.value = ''; inp.focus();
+}
+
+// ── CHATS ────────────────────────────────────────
+var chats = {};
+var currentId = null;
+var busy = false;
+try { chats = JSON.parse(localStorage.getItem('rabai_chats') || '{}'); } catch(e) { chats = {}; }
+function saveChats() { try { localStorage.setItem('rabai_chats', JSON.stringify(chats)); } catch(e) {} }
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+var chatArea = document.getElementById('chat-area');
+var inp = document.getElementById('inp');
+var sbtn = document.getElementById('sbtn');
+var chatList = document.getElementById('chat-list');
+var chatTitle = document.getElementById('chat-title');
+
+function newChat() {
+  var id = genId();
+  var date = new Date().toLocaleDateString(getLang(), { day:'2-digit', month:'short' });
+  chats[id] = { name: tStr('newChat'), date: date, messages: [] };
+  saveChats(); loadChat(id);
+}
+
+function deleteChat(id) {
+  showConfirm(tStr('del_title'), tStr('del_text'), tStr('del_ok'), tStr('del_cancel'), function() {
+    delete chats[id]; saveChats(); renderSidebar();
+    var ids = Object.keys(chats);
+    if (ids.length > 0) loadChat(ids[ids.length - 1]); else newChat();
+  });
+}
+
+function startRename(id) {
+  var ci = document.querySelector('.ci[data-id="' + id + '"]');
+  if (!ci) return;
+  var nm = ci.querySelector('.ci-name');
+  var cur = chats[id].name;
+  var inp2 = document.createElement('input');
+  inp2.className = 'ci-name-input'; inp2.value = cur;
+  nm.replaceWith(inp2); inp2.focus(); inp2.select();
+  function finish() {
+    var val = inp2.value.trim() || cur;
+    chats[id].name = val; saveChats();
+    var newNm = document.createElement('div'); newNm.className = 'ci-name'; newNm.textContent = val;
+    inp2.replaceWith(newNm);
+    if (id === currentId) chatTitle.textContent = val;
+    renderSidebar();
+  }
+  inp2.addEventListener('blur', finish);
+  inp2.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); finish(); }
+    if (e.key === 'Escape') { inp2.value = cur; finish(); }
+  });
+}
+
+async function autoName(id) {
+  var msgs = chats[id] ? chats[id].messages : [];
+  if (msgs.length < 2) return;
+  var fu = msgs.find(function(m) { return m.role === 'user'; });
+  var fa = msgs.find(function(m) { return m.role === 'assistant'; });
+  if (!fu || !fa) return;
+  try {
+    var res = await fetch('/api/chat', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer ' + GROQ_KEY},
+      body:JSON.stringify({ model:'llama-3.1-8b-instant', max_tokens:15, temperature:0.3,
+        messages:[
+          { role:'system', content:'Generate a short chat title (max 5 words) capturing the topic. Reply ONLY with the title, no quotes, no punctuation at end.' },
+          { role:'user', content:'User: ' + fu.content.slice(0,150) + '\nAI: ' + fa.content.slice(0,150) }
+        ]
+      })
+    });
+    var data = await res.json();
+    if (data.choices && data.choices[0]) {
+      var name = data.choices[0].message.content.trim().replace(/^["']|["']$/g,'');
+      if (name && name.length > 0 && name.length < 50) {
+        chats[id].name = name; saveChats();
+        if (id === currentId) chatTitle.textContent = name;
+        renderSidebar();
+      }
+    }
+  } catch(e) {}
+}
+
+function loadChat(id) {
+  currentId = id; chatTitle.textContent = chats[id].name;
+  chatArea.innerHTML = '';
+  if (chats[id].messages.length === 0) showWelcome();
+  else chats[id].messages.forEach(function(m) { renderMsg(m.role, m.content); });
+  renderSidebar(); chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function renderSidebar() {
+  chatList.innerHTML = '';
+  var ids = Object.keys(chats).reverse();
+  if (!ids.length) {
+    chatList.innerHTML = '<div style="padding:12px;font-size:12px;color:var(--text3);text-align:center">' + tStr('noChats') + '</div>';
+    return;
+  }
+  ids.forEach(function(id) {
+    var c = chats[id];
+    var div = document.createElement('div');
+    div.className = 'ci' + (id === currentId ? ' active' : '');
+    div.setAttribute('data-id', id);
+    var nm = document.createElement('div'); nm.className = 'ci-name'; nm.textContent = c.name;
+    var dt = document.createElement('div'); dt.className = 'ci-date'; dt.textContent = c.date;
+    var dl = document.createElement('button'); dl.className = 'ci-del'; dl.textContent = 'x'; dl.setAttribute('data-id', id);
+    div.appendChild(nm); div.appendChild(dt); div.appendChild(dl);
+    chatList.appendChild(div);
+  });
+}
+
+chatList.addEventListener('click', function(e) {
+  var del = e.target.closest('.ci-del');
+  if (del) { e.stopPropagation(); deleteChat(del.getAttribute('data-id')); return; }
+  var ci = e.target.closest('.ci');
+  if (ci) {
+    var id = ci.getAttribute('data-id');
+    if (e.detail === 2 && id === currentId) { startRename(id); return; }
+    loadChat(id);
+  }
+});
+document.getElementById('new-btn').addEventListener('click', newChat);
+
+// ── WELCOME ──────────────────────────────────────
+function showWelcome() {
+  chatArea.innerHTML = '';
+  var div = document.createElement('div'); div.className = 'welcome';
+  div.innerHTML = '<div class="w-icon">🎮</div>' +
+    '<h1>' + tStr('welcome_title') + ' <span>RabAI</span></h1>' +
+    '<p>' + tStr('welcome_sub') + '</p>' +
+    '<div class="starters">' +
+    ['s1','s2','s3','s4'].map(function(k) { return '<div class="starter">' + tStr(k) + '</div>'; }).join('') +
+    '</div>';
+  chatArea.appendChild(div);
+  div.querySelectorAll('.starter').forEach(function(s) {
+    s.addEventListener('click', function() { inp.value = s.textContent; sbtn.disabled = false; sendMsg(); });
+  });
+}
+
+// ── FORMAT ───────────────────────────────────────
+function escHtml(tx) { return tx.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function formatText(text) {
+  var parts = text.split(/(```[\s\S]*?```)/g), result = '';
+  parts.forEach(function(p) {
+    if (p.startsWith('```')) {
+      var code = p.replace(/^```[^\n]*\n?/,'').replace(/```$/,'');
+      var copyTxt = tStr('copyCode');
+      var copiedTxt = tStr('copied');
+      result += '<pre><button class="copy-code-btn" data-copy="1" data-orig="' + copyTxt + '" data-done="' + copiedTxt + '">' + copyTxt + '</button>' + escHtml(code) + '</pre>';
+    } else {
+      var f = p.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/`([^`]+)`/g,'<code>$1</code>').replace(/^#{1,3}\s+(.+)$/gm,'<strong>$1</strong>');
+      f.split(/\n\n+/).forEach(function(para) { if (para.trim()) result += '<p>' + para.replace(/\n/g,'<br>') + '</p>'; });
+    }
+  });
+  return result;
+}
+
+function renderMsg(role, text) {
+  var w = chatArea.querySelector('.welcome'); if (w) w.remove();
+  var div = document.createElement('div'); div.className = 'msg ' + (role === 'user' ? 'user' : 'ai');
+  var av = document.createElement('div'); av.className = 'av ' + (role === 'user' ? 'usr-av' : 'ai-av');
+  av.textContent = role === 'user' ? tStr('you') : 'R';
+  var bub = document.createElement('div'); bub.className = 'bub';
+  if (role === 'user') bub.textContent = text; else bub.innerHTML = formatText(text);
+  div.appendChild(av); div.appendChild(bub);
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+  // copy code buttons
+  bub.querySelectorAll('[data-copy]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var pre = btn.parentElement;
+      var code = pre.innerText.replace(btn.innerText, '').trim();
+      navigator.clipboard.writeText(code).then(function() {
+        btn.textContent = btn.getAttribute('data-done');
+        setTimeout(function() { btn.textContent = btn.getAttribute('data-orig'); }, 2000);
+      });
+    });
+  });
+}
+
+function showTyping() {
+  var w = chatArea.querySelector('.welcome'); if (w) w.remove();
+  var div = document.createElement('div'); div.className = 'msg ai'; div.id = 'tind';
+  var av = document.createElement('div'); av.className = 'av ai-av'; av.textContent = 'R';
+  var bub = document.createElement('div'); bub.className = 'bub';
+  bub.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+  div.appendChild(av); div.appendChild(bub); chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+function rmTyping() { var t = document.getElementById('tind'); if (t) t.remove(); }
+
+function showErr(msg) {
+  rmTyping();
+  var d = document.createElement('div'); d.className = 'err-bar'; d.textContent = msg;
+  chatArea.appendChild(d); chatArea.scrollTop = chatArea.scrollHeight;
+  setTimeout(function() { if (d.parentNode) d.remove(); }, 6000);
+}
+
+// ── SEND ─────────────────────────────────────────
+async function sendMsg() {
+  var text = inp.value.trim();
+  if (!text || busy || !currentId) return;
+
+  var banUntil = parseInt(getS('ban_until') || '0');
+  if (banUntil && Date.now() < banUntil) { startBanScreen(banUntil); return; }
+
+  if (checkMod(text)) {
+    warnLevel++;
+    if (warnLevel >= 3) { triggerBan(); inp.value = ''; return; }
+    showModWarn(warnLevel);
+    inp.value = ''; inp.style.height = 'auto';
+    sbtn.disabled = true; return;
+  }
+
+  busy = true; sbtn.disabled = true;
+  inp.value = ''; inp.style.height = 'auto';
+  if (activeCmd) { clearCmd(); }
+
+  var w = chatArea.querySelector('.welcome'); if (w) w.remove();
+  chats[currentId].messages.push({ role:'user', content:text });
+  saveChats(); renderMsg('user', text); renderSidebar(); showTyping();
+
+  var plan = getS('plan') || 'free';
+  var model = MODELS[plan];
+  var cmdKey = null;
+  Object.keys(CMD_PROMPTS).forEach(function(k) { if (text.startsWith(k)) cmdKey = k; });
+  var sys = buildSystem();
+  if (cmdKey) sys += '\n\n--- MODO ESPECIAL ---\n' + CMD_PROMPTS[cmdKey];
+
+  var messages = [{ role:'system', content:sys }];
+  chats[currentId].messages.forEach(function(m) { messages.push({ role:m.role, content:m.content }); });
+
+  try {
+    var res = await fetch('/api/chat'', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer ' + GROQ_KEY},
+      body:JSON.stringify({ model:model, messages:messages, max_tokens:1024, temperature:0.7 })
+    });
+    var data = await res.json(); rmTyping();
+    if (data.error) {
+      showErr('Error: ' + (data.error.message || 'Verifica tu API key'));
+      chats[currentId].messages.pop(); saveChats();
+    } else {
+      var reply = data.choices && data.choices[0] ? data.choices[0].message.content : 'Sin respuesta.';
+      chats[currentId].messages.push({ role:'assistant', content:reply });
+      saveChats(); renderMsg('assistant', reply);
+      var userCount = chats[currentId].messages.filter(function(m) { return m.role === 'user'; }).length;
+      if (userCount === 1) autoName(currentId);
+    }
+  } catch(e) {
+    rmTyping(); showErr('No se pudo conectar.');
+    chats[currentId].messages.pop(); saveChats();
+  }
+  busy = false; sbtn.disabled = inp.value.trim() === ''; inp.focus();
+}
+
+// ── INPUT LISTENERS ──────────────────────────────
+inp.addEventListener('input', function() {
+  var val = inp.value;
+  if (val.startsWith('/')) {
+    cmdIdx = 0; renderCmdMenu(getCmdFiltered(val));
+  } else if (cmdVisible) {
+    hideCmdMenu();
+  }
+  sbtn.disabled = val.trim() === '' || busy;
+  inp.style.height = 'auto';
+  inp.style.height = Math.min(inp.scrollHeight, 120) + 'px';
+});
+
+inp.addEventListener('keydown', function(e) {
+  if (cmdVisible) {
+    var filtered = getCmdFiltered(inp.value);
+    if (e.key === 'ArrowDown') { e.preventDefault(); cmdIdx = Math.min(cmdIdx+1, filtered.length-1); renderCmdMenu(filtered); return; }
+    if (e.key === 'ArrowUp')   { e.preventDefault(); cmdIdx = Math.max(cmdIdx-1, 0); renderCmdMenu(filtered); return; }
+    if (e.key === 'Tab' || (e.key === 'Enter' && filtered.length)) {
+      e.preventDefault();
+      if (filtered[cmdIdx]) selectCmd(filtered[cmdIdx].cmd);
+      return;
+    }
+    if (e.key === 'Escape') { hideCmdMenu(); return; }
+  }
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!sbtn.disabled) sendMsg(); }
+});
+
+sbtn.addEventListener('click', sendMsg);
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#cmd-area') && !e.target.closest('.input-wrap')) hideCmdMenu();
+});
+
+
+// ── SUPABASE AUTH ─────────────────────────────────
+var sb = null;
+var currentUser = null;
+var currentProfile = null;
+var isSignup = false;
+
+function initSupabase() {
+  try {
+    sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+    sb.auth.onAuthStateChange(function(event, session) {
+      if (session && session.user) {
+        currentUser = session.user;
+        loadProfile(session.user);
+      } else {
+        currentUser = null;
+        currentProfile = null;
+        showLoginScreen();
+      }
+    });
+    sb.auth.getSession().then(function(res) {
+      if (res.data && res.data.session && res.data.session.user) {
+        currentUser = res.data.session.user;
+        loadProfile(res.data.session.user);
+      } else {
+        showLoginScreen();
+      }
+    });
+  } catch(e) {
+    console.error('Supabase init error:', e);
+    hideLoginScreen();
+  }
+}
+
+async function loadProfile(user) {
+  try {
+    var res = await sb.from('profiles').select('*').eq('id', user.id).single();
+    if (res.data) {
+      currentProfile = res.data;
+    } else {
+      // Create profile if doesn't exist
+      await sb.from('profiles').insert({ id: user.id, email: user.email, plan: 'free', is_admin: false, waitlist: false });
+      currentProfile = { id: user.id, email: user.email, plan: 'free', is_admin: false, waitlist: false };
+    }
+    hideLoginScreen();
+    applyUserProfile();
+  } catch(e) {
+    hideLoginScreen();
+  }
+}
+
+function applyUserProfile() {
+  if (!currentProfile) return;
+
+  // Apply plan — only admin gets Pro automatically
+  var plan = (currentProfile.plan === 'lifetime_pro' || currentProfile.plan === 'pro') && currentProfile.is_admin ? 'pro' : 'free';
+  saveS('plan', plan);
+  setPlan(plan);
+
+  // Lock Pro card — only admins can have it
+  var cardPro = document.getElementById('card-pro');
+  if (cardPro) {
+    if (!currentProfile.is_admin) {
+      cardPro.style.opacity = '0.5';
+      cardPro.style.cursor = 'not-allowed';
+      cardPro.title = 'Proximamente disponible';
+    } else {
+      cardPro.style.opacity = '1';
+      cardPro.onclick = function() { setPlan('pro'); };
+    }
+  }
+  var cardFree = document.getElementById('card-free');
+  if (cardFree && !currentProfile.is_admin) {
+    cardFree.style.cursor = 'default';
+  }
+
+  // Show admin badge
+  if (currentProfile.is_admin) {
+    var existing = document.querySelector('.admin-badge');
+    if (!existing) {
+      var badge = document.createElement('span');
+      badge.className = 'admin-badge';
+      badge.innerHTML = '&#9733; ADMIN';
+      var topLeft = document.querySelector('.topbar-left');
+      if (topLeft) topLeft.appendChild(badge);
+    }
+  }
+
+  // Update settings account info
+  var nameEl = document.getElementById('s-user-lbl');
+  var emailEl = document.getElementById('s-email-lbl');
+  if (nameEl && currentUser) nameEl.textContent = currentUser.email ? currentUser.email.split('@')[0] : 'Usuario';
+  if (emailEl && currentUser) emailEl.textContent = currentUser.email || '';
+
+  // Update waitlist button
+  var wBtn = document.getElementById('waitlist-btn');
+  var wSection = document.getElementById('waitlist-section');
+  if (wSection) {
+    if (currentProfile.is_admin) {
+      wSection.style.display = 'none';
+    } else if (currentProfile.waitlist) {
+      if (wBtn) {
+        wBtn.textContent = '✅ Ya estas en la lista de espera';
+        wBtn.disabled = true;
+        wBtn.style.opacity = '0.6';
+      }
+    }
+  }
+}
+
+function showLoginScreen() {
+  var ls = document.getElementById('login-screen');
+  if (ls) ls.style.display = 'flex';
+  // Reset form state
+  isSignup = false;
+  var btn = document.getElementById('email-btn');
+  var sw = document.getElementById('login-switch-txt');
+  var ep = document.getElementById('login-email');
+  var pp = document.getElementById('login-pass');
+  if (btn) { btn.textContent = tStr('login_btn'); btn.disabled = false; }
+  if (sw) sw.innerHTML = tStr('login_switch_login');
+  if (ep) ep.value = '';
+  if (pp) pp.value = '';
+  var err = document.getElementById('login-err');
+  var ok = document.getElementById('login-ok');
+  if (err) err.style.display = 'none';
+  if (ok) ok.style.display = 'none';
+}
+
+function hideLoginScreen() {
+  var ls = document.getElementById('login-screen');
+  if (ls) ls.style.display = 'none';
+}
+
+async function loginEmail() {
+  if (!sb) return;
+  var email = document.getElementById('login-email').value.trim();
+  var pass = document.getElementById('login-pass').value;
+  var btn = document.getElementById('email-btn');
+  if (!email || !pass) { showLoginErr('Completa todos los campos'); return; }
+  if (!email.includes('@')) { showLoginErr('Ingresa un email valido'); return; }
+  if (pass.length < 6) { showLoginErr('La contrasena debe tener al menos 6 caracteres'); return; }
+  btn.disabled = true;
+
+  if (isSignup) {
+    // Try signup
+    var res = await sb.auth.signUp({ email: email, password: pass });
+    if (res.error) {
+      // If user already exists, switch to login automatically
+      if (res.error.message.toLowerCase().includes('already') || res.error.status === 400) {
+        showLoginErr('Esta cuenta ya existe. Iniciando sesion...');
+        setTimeout(async function() {
+          var res2 = await sb.auth.signInWithPassword({ email: email, password: pass });
+          if (res2.error) { showLoginErr('Contrasena incorrecta'); btn.disabled = false; }
+        }, 1000);
+      } else {
+        showLoginErr(res.error.message);
+        btn.disabled = false;
+      }
+    } else if (res.data && res.data.user && res.data.user.identities && res.data.user.identities.length === 0) {
+      // Supabase returns success but empty identities when email already exists
+      showLoginErr('Esta cuenta ya existe.');
+      setTimeout(async function() {
+        var res2 = await sb.auth.signInWithPassword({ email: email, password: pass });
+        if (res2.error) { showLoginErr('Contrasena incorrecta para esta cuenta'); btn.disabled = false; }
+      }, 1000);
+    } else {
+      showLoginOk('Revisa tu email para confirmar tu cuenta 📧');
+      btn.disabled = false;
+    }
+  } else {
+    // Login
+    var res = await sb.auth.signInWithPassword({ email: email, password: pass });
+    if (res.error) {
+      if (res.error.message.toLowerCase().includes('invalid')) {
+        showLoginErr('Email o contrasena incorrectos');
+      } else if (res.error.message.toLowerCase().includes('confirm')) {
+        showLoginErr('Confirma tu email primero — revisa tu bandeja de entrada');
+      } else {
+        showLoginErr(res.error.message);
+      }
+      btn.disabled = false;
+    }
+  }
+}
+
+function toggleSignup() {
+  isSignup = !isSignup;
+  var btn = document.getElementById('email-btn');
+  var sw = document.getElementById('login-switch-txt');
+  if (btn) btn.textContent = isSignup ? tStr('signup_btn') : tStr('login_btn');
+  if (sw) sw.innerHTML = isSignup ? tStr('login_switch_signup') : tStr('login_switch_login');
+}
+
+async function joinWaitlist() {
+  if (!currentUser || !sb) return;
+  if (currentProfile && currentProfile.waitlist) {
+    var btn = document.getElementById('waitlist-btn');
+    if (btn) { btn.textContent = '✅ Ya estas en la lista'; btn.disabled = true; }
+    return;
+  }
+  var btn = document.getElementById('waitlist-btn');
+  if (btn) { btn.textContent = 'Guardando...'; btn.disabled = true; }
+  await sb.from('profiles').update({ waitlist: true }).eq('id', currentUser.id);
+  if (currentProfile) currentProfile.waitlist = true;
+  if (btn) { btn.textContent = '✅ Listo! Te avisamos cuando este disponible'; }
+}
+
+function showLoginErr(msg) {
+  var el = document.getElementById('login-err');
+  if (el) { el.textContent = msg; el.style.display = 'block'; }
+  setTimeout(function() { if (el) el.style.display = 'none'; }, 4000);
+}
+
+function showLoginOk(msg) {
+  var el = document.getElementById('login-ok');
+  if (el) { el.textContent = msg; el.style.display = 'block'; }
+}
+
+async function logOut() {
+  if (!sb) return;
+  await sb.auth.signOut();
+  // Reset state
+  currentUser = null;
+  currentProfile = null;
+  // Remove admin badge
+  var badge = document.querySelector('.admin-badge');
+  if (badge) badge.remove();
+  // Reset plan to free
+  saveS('plan', 'free');
+  setPlan('free');
+  // Unlock pro card
+  var cardPro = document.getElementById('card-pro');
+  if (cardPro) { cardPro.style.opacity = '0.5'; cardPro.style.cursor = 'not-allowed'; cardPro.onclick = null; }
+  // Reset account info in settings
+  var nameEl = document.getElementById('s-user-lbl');
+  var emailEl = document.getElementById('s-email-lbl');
+  if (nameEl) nameEl.textContent = tStr('localUser');
+  if (emailEl) emailEl.textContent = tStr('localEmail');
+  // Close settings modal if open
+  closeModal('settings-overlay');
+  // Show login screen
+  showLoginScreen();
+}
+
+// ── INIT ─────────────────────────────────────────
+applyTheme();
+setPlan(getS('plan') || 'free');
+if (getS('cursor') === 'off') {
+  document.body.classList.add('cursor-off');
+  document.getElementById('cursor-toggle').className = 'toggle';
+}
+if ((getS('sidebar') || 'open') === 'closed') {
+  sidebarOpen = false; sidebarEl.className = 'sidebar collapsed';
+}
+if (!getS('lang')) saveS('lang', detectSysLang());
+applyI18N();
+document.getElementById('lang-sel').value = getS('lang') || 'auto';
+document.getElementById('tone-sel').value = getS('tone') || 'cercano';
+
+var ids = Object.keys(chats);
+if (ids.length > 0) loadChat(ids[ids.length - 1]); else newChat();
+startBanScreen();
+initSupabase();
+</script>
+</body>
+</html>
