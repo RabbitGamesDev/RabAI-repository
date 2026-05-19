@@ -1406,7 +1406,7 @@ async function sendMsg() {
   chats[currentId].messages.forEach(function(m) { messages.push({ role:m.role, content:m.content }); });
 
   try {
-    var res = await fetch('/api/chat'', {
+    var res = await fetch('/api/chat', {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer ' + GROQ_KEY},
       body:JSON.stringify({ model:model, messages:messages, max_tokens:1024, temperature:0.7 })
