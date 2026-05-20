@@ -1523,9 +1523,26 @@ async function loadProfile(user) {
       // Create profile if doesn't exist
       await sb.from('profiles').insert({ id: user.id, email: user.email, plan: 'free', is_admin: false, waitlist: false });
       currentProfile = { id: user.id, email: user.email, plan: 'free', is_admin: false, waitlist: false };
-    }
+        }
     hideLoginScreen();
     applyUserProfile();
+
+    try {
+      chats = JSON.parse(localStorage.getItem(getChatKey()) || '{}');
+    } catch(e) {
+      chats = {};
+    }
+
+    renderSidebar();
+
+    var ids = Object.keys(chats);
+
+    if (ids.length > 0) {
+      loadChat(ids[ids.length - 1]);
+    } else {
+      newChat();
+    }
+
   } catch(e) {
     hideLoginScreen();
   }
