@@ -1178,9 +1178,27 @@ function clearCmd() {
 var chats = {};
 var currentId = null;
 var busy = false;
-try { chats = JSON.parse(localStorage.getItem('rabai_chats') || '{}'); } catch(e) { chats = {}; }
-function saveChats() { try { localStorage.setItem('rabai_chats', JSON.stringify(chats)); } catch(e) {} }
-function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+function getChatKey() {
+  if (!currentUser) return 'rabai_chats_guest';
+  return 'rabai_chats_' + currentUser.id;
+}
+
+try {
+  chats = JSON.parse(localStorage.getItem(getChatKey()) || '{}');
+} catch(e) {
+  chats = {};
+}
+
+function saveChats() {
+  try {
+    localStorage.setItem(getChatKey(), JSON.stringify(chats));
+  } catch(e) {}
+}
+
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
 
 var chatArea = document.getElementById('chat-area');
 var inp = document.getElementById('inp');
