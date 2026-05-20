@@ -1235,7 +1235,7 @@ async function autoName(id) {
   try {
     var res = await fetch('/api/chat', {
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer ' + GROQ_KEY},
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify({ model:'llama-3.1-8b-instant', max_tokens:15, temperature:0.3,
         messages:[
           { role:'system', content:'Generate a short chat title (max 5 words) capturing the topic. Reply ONLY with the title, no quotes, no punctuation at end.' },
