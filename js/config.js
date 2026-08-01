@@ -11,10 +11,14 @@ const SUPABASE_URL = 'https://gjxyweszlqpfmcnqimqk.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_l86Pc13sU6hKJJ6mwNm68A_z3jftgbB';
 
 // ─────────────────────────────────────────────────────────────────────────
-// 2. Groq API (backend only — frontend uses /api/chat)
+// 2. Backend (Cloudflare Worker)
 // ─────────────────────────────────────────────────────────────────────────
 
-const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const BACKEND_URL = 'https://rabai-rgslabs.rabbitgames0103.workers.dev';
+
+// ─────────────────────────────────────────────────────────────────────────
+// 3. Groq Models
+// ─────────────────────────────────────────────────────────────────────────
 
 const MODELS = {
   free: {
@@ -32,7 +36,7 @@ const MODELS = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────
-// 3. App Constants
+// 4. App Constants
 // ─────────────────────────────────────────────────────────────────────────
 
 const APP_NAME = 'RabAI';
@@ -53,7 +57,7 @@ const STORAGE_KEYS = {
 
 const MODERATION = {
   strikes: 3,
-  banDuration: 60, // seconds
+  banDuration: 60,
   maxMsgLength: 4000
 };
 
@@ -63,11 +67,3 @@ const GENRES = [
   'Racing', 'Fighting', 'Shooter', 'Survival', 'Sandbox',
   'Visual Novel', 'Tower Defense', 'MMO', 'Battle Royale', 'Other'
 ];
-
-// ─────────────────────────────────────────────────────────────────────────
-// 4. Export
-// ─────────────────────────────────────────────────────────────────────────
-
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { SUPABASE_URL, SUPABASE_ANON_KEY, GROQ_API_URL, MODELS, APP_NAME, APP_VERSION, APP_SUBTITLE, STORAGE_KEYS, MODERATION, GENRES };
-}
