@@ -7,7 +7,7 @@
 // 1. State
 // ─────────────────────────────────────────────────────────────────────────
 
-let currentProjectId = null;
+// currentProjectId se declara en app.js como window.currentProjectId
 
 // ─────────────────────────────────────────────────────────────────────────
 // 2. Initialize Projects Screen
