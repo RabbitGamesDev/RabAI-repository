@@ -151,7 +151,7 @@ async function sendMsg() {
   try {
     abortController = new AbortController();
 
-    const response = await fetch('/api/chat', {
+    const response = await fetch(BACKEND_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
