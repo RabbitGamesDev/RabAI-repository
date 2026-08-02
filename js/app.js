@@ -18,10 +18,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   initTheme();
   initCursor();
   initSidebar();
-  initSupabase?.();
+
+  // FIXED: initSupabase is a function, not an optional property
+  if (typeof initSupabase === 'function') {
+    initSupabase();
+  }
 
   // Step 3: Check auth
-  const isAuthenticated = await initAuth();
+  let isAuthenticated = false;
+  try {
+    isAuthenticated = await initAuth();
+  } catch (err) {
+    console.error('Auth init error:', err);
+    showLoginScreen();
+  }
 
   // Step 4: Initialize UI modules
   initAuthUI();
@@ -55,7 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ─────────────────────────────────────────────────────────────────────────
 
 function restoreLastSession() {
-  const user = getCurrentUser?.();
+  const user = getCurrentUser();
   if (!user) return;
 
   const lastProjectId = getLastProject(user.id);
@@ -178,7 +188,7 @@ function onSaveSettings(e) {
 
   // Get values
   const theme = form.querySelector('[name="theme"]:checked')?.value || 'dark';
-  const accent = form.querySelector('[name="accent"]:checked')?.value || 'purple';
+  const accent = form.querySelector('.accent-option.selected')?.dataset.accent || 'purple';
   const language = form.querySelector('[name="language"]')?.value || 'es';
   const cursor = form.querySelector('[name="cursor"]')?.checked ?? true;
   const sounds = form.querySelector('[name="sounds"]')?.checked ?? false;
@@ -211,7 +221,7 @@ function onClearData() {
   const lang = getSetting('language', 'es');
   if (!confirm(t('clearDataConfirm', lang))) return;
 
-  const user = getCurrentUser?.();
+  const user = getCurrentUser();
   if (user) {
     clearAllData(user.id);
   }
@@ -247,15 +257,14 @@ function populateSettingsForm() {
   if (themeRadio) themeRadio.checked = true;
 
   // Accent
-  const accentRadio = form.querySelector(`[name="accent"][value="${settings.accent}"]`);
-  if (accentRadio) accentRadio.checked = true;
+  document.querySelectorAll('.accent-option').forEach(el => {
+    el.classList.toggle('selected', el.dataset.accent === settings.accent);
+  });
 
   // Language
   const langSelect = form.querySelector('[name="language"]');
   if (langSelect) {
-    langSelect.innerHTML = getAvailableLanguages().map(l => 
-      `<option value="${l.code}" ${l.code === settings.language ? 'selected' : ''}>${l.name}</option>`
-    ).join('');
+    langSelect.value = settings.language;
   }
 
   // Cursor
