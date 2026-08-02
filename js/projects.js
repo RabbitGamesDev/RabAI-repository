@@ -7,19 +7,19 @@
 // 1. State
 // ─────────────────────────────────────────────────────────────────────────
 
-// currentProjectId se declara en app.js como window.currentProjectId
+// currentProjectId is declared in app.js as window.currentProjectId
 
 // ─────────────────────────────────────────────────────────────────────────
 // 2. Initialize Projects Screen
 // ─────────────────────────────────────────────────────────────────────────
 
 function initProjects() {
-  const newProjectBtn = document.getElementById('btn-new-project');
   const newProjectModal = document.getElementById('new-project-modal');
   const projectForm = document.getElementById('new-project-form');
 
-  newProjectBtn?.addEventListener('click', () => openModal('new-project-modal'));
-  
+  // Note: btn-new-project doesn't exist in HTML; new project is created via the "+" card in the grid
+  // So we don't attach a listener to a non-existent button
+
   projectForm?.addEventListener('submit', onCreateProject);
 
   // Close modal on cancel
@@ -28,13 +28,20 @@ function initProjects() {
     projectForm?.reset();
   });
 
-  // Populate genre select
+  // Populate genre selects
+  populateGenreSelects();
+}
+
+function populateGenreSelects() {
   const genreSelect = document.getElementById('project-genre');
-  if (genreSelect) {
-    genreSelect.innerHTML = GENRES.map(g => 
-      `<option value="${escHtml(g)}">${escHtml(g)}</option>`
-    ).join('');
-  }
+  const settingsGenreSelect = document.getElementById('project-settings-genre');
+
+  const options = GENRES.map(g => 
+    `<option value="${escHtml(g)}">${escHtml(g)}</option>`
+  ).join('');
+
+  if (genreSelect) genreSelect.innerHTML = options;
+  if (settingsGenreSelect) settingsGenreSelect.innerHTML = options;
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -42,7 +49,7 @@ function initProjects() {
 // ─────────────────────────────────────────────────────────────────────────
 
 function loadProjects() {
-  const user = getCurrentUser?.();
+  const user = getCurrentUser();
   if (!user) return;
 
   const projects = getProjects(user.id);
@@ -73,6 +80,8 @@ function renderProjectCard(project, lang) {
   const date = project.createdAt 
     ? new Date(project.createdAt).toLocaleDateString(lang) 
     : t('today', lang);
+
+  const chatCount = getChatCount(project.id);
 
   return `
     <div class="project-card" data-project-id="${escHtml(project.id)}">
@@ -105,7 +114,7 @@ function renderProjectCard(project, lang) {
         </svg>
         ${date}
         <span style="margin-left: auto;">
-          ${getChatCount(project.id)} ${getChatCount(project.id) === 1 ? 'chat' : 'chats'}
+          ${chatCount} ${chatCount === 1 ? 'chat' : 'chats'}
         </span>
       </div>
     </div>
@@ -113,7 +122,7 @@ function renderProjectCard(project, lang) {
 }
 
 function getChatCount(projectId) {
-  const user = getCurrentUser?.();
+  const user = getCurrentUser();
   if (!user) return 0;
   return getChats(user.id, projectId).length;
 }
@@ -142,7 +151,7 @@ async function onCreateProject(e) {
     return;
   }
 
-  const user = getCurrentUser?.();
+  const user = getCurrentUser();
   if (!user) {
     showToast('error', t('errorAuth', lang), '');
     return;
@@ -157,11 +166,11 @@ async function onCreateProject(e) {
 
   closeModal('new-project-modal');
   form.reset();
-  
-  showToast('success', t('newProject', lang), `"${name}" ${t('created', lang) || 'creado'}`, 3000);
-  
+
+  showToast('success', t('newProject', lang), `"${name}" ${t('created', lang)}`, 3000);
+
   loadProjects();
-  
+
   // Auto-enter the new project
   enterProject(project.id);
 }
@@ -171,7 +180,7 @@ async function onCreateProject(e) {
 // ─────────────────────────────────────────────────────────────────────────
 
 function enterProject(projectId) {
-  const user = getCurrentUser?.();
+  const user = getCurrentUser();
   if (!user) return;
 
   const project = getProject(user.id, projectId);
@@ -180,7 +189,7 @@ function enterProject(projectId) {
     return;
   }
 
-  currentProjectId = projectId;
+  window.currentProjectId = projectId;
   setLastProject(user.id, projectId);
 
   // Update UI
@@ -194,15 +203,16 @@ function enterProject(projectId) {
   // Show welcome or last chat
   const lastChatId = getLastChat(user.id, projectId);
   if (lastChatId && chats.find(c => c.id === lastChatId)) {
-    selectChat(lastChatId);
+    window.selectChat?.(lastChatId);
   } else if (chats.length > 0) {
-    selectChat(chats[0].id);
+    window.selectChat?.(chats[0].id);
   } else {
-    renderWelcomeScreen();
+    window.renderWelcomeScreen?.();
   }
 
-  // Show export button
+  // Show export button and back button
   document.getElementById('btn-export')?.classList.remove('hidden');
+  document.getElementById('btn-back')?.classList.remove('hidden');
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -210,7 +220,7 @@ function enterProject(projectId) {
 // ─────────────────────────────────────────────────────────────────────────
 
 function deleteProjectConfirm(projectId) {
-  const user = getCurrentUser?.();
+  const user = getCurrentUser();
   if (!user) return;
 
   const project = getProject(user.id, projectId);
@@ -224,11 +234,12 @@ function deleteProjectConfirm(projectId) {
   deleteProject(user.id, projectId);
 
   // If we were in this project, go back to projects screen
-  if (currentProjectId === projectId) {
-    currentProjectId = null;
-    currentChatId = null;
+  if (window.currentProjectId === projectId) {
+    window.currentProjectId = null;
+    window.currentChatId = null;
     showProjectsScreen();
     document.getElementById('btn-export')?.classList.add('hidden');
+    document.getElementById('btn-back')?.classList.add('hidden');
   }
 
   showToast('success', t('deleteProject', lang), `"${project.name}" eliminado`, 3000);
@@ -240,13 +251,11 @@ function deleteProjectConfirm(projectId) {
 // ─────────────────────────────────────────────────────────────────────────
 
 function editProjectSettings(projectId) {
-  const user = getCurrentUser?.();
+  const user = getCurrentUser();
   if (!user) return;
 
   const project = getProject(user.id, projectId);
   if (!project) return;
-
-  const lang = getSetting('language', 'es');
 
   // Populate settings form
   const form = document.getElementById('project-settings-form');
@@ -284,7 +293,7 @@ async function onUpdateProjectSettings(e) {
     return;
   }
 
-  const user = getCurrentUser?.();
+  const user = getCurrentUser();
   if (!user) return;
 
   updateProject(user.id, projectId, {
@@ -296,7 +305,7 @@ async function onUpdateProjectSettings(e) {
   closeModal('project-settings-modal');
 
   // Refresh UI if currently in this project
-  if (currentProjectId === projectId) {
+  if (window.currentProjectId === projectId) {
     updateTopbar(name, genre);
   }
 
@@ -309,10 +318,11 @@ async function onUpdateProjectSettings(e) {
 // ─────────────────────────────────────────────────────────────────────────
 
 function backToProjects() {
-  currentProjectId = null;
-  currentChatId = null;
+  window.currentProjectId = null;
+  window.currentChatId = null;
   showProjectsScreen();
   document.getElementById('btn-export')?.classList.add('hidden');
+  document.getElementById('btn-back')?.classList.add('hidden');
   loadProjects();
 }
 
@@ -326,7 +336,6 @@ if (typeof module !== 'undefined' && module.exports) {
     openNewProjectModal, onCreateProject,
     enterProject, deleteProjectConfirm,
     editProjectSettings, initProjectSettings, onUpdateProjectSettings,
-    backToProjects,
-    currentProjectId
+    backToProjects
   };
 }
