@@ -210,10 +210,13 @@ function isCommand(input) {
 
 function getCommandSuggestions(partial) {
   const query = partial.toLowerCase();
-  return COMMANDS.filter(c => 
-    c.cmd.toLowerCase().includes(query) || 
-    c.desc_key.toLowerCase().includes(query)
-  );
+  return COMMANDS.filter(c => {
+    // Match by command name
+    if (c.cmd.toLowerCase().includes(query)) return true;
+    // Match by description (resolve the i18n key first)
+    const desc = t(c.desc_key, 'es') || '';
+    return desc.toLowerCase().includes(query);
+  });
 }
 
 // ─────────────────────────────────────────────────────────────────────────
