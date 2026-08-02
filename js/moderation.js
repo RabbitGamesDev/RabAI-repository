@@ -91,7 +91,7 @@ function checkMod(text) {
 
   for (const word of BAD_WORDS) {
     // Match whole words or substrings (for compound words)
-    const regex = new RegExp(`\\b${word}\\b|${word}`, 'i');
+    const regex = new RegExp(`\b${word}\b|${word}`, 'i');
     if (regex.test(lowerText)) {
       foundWords.push(word);
     }
