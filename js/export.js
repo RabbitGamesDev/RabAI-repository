@@ -29,20 +29,20 @@ const EXPORT_FORMATS = {
 // 2. Main Export Function
 // ─────────────────────────────────────────────────────────────────────────
 
-function exportProject(format = 'markdown') {
-  const user = getCurrentUser?.();
-  if (!user || !currentProjectId) {
+function exportProject(format) {
+  const user = getCurrentUser();
+  if (!user || !window.currentProjectId) {
     showToast('error', t('noProjectSelected', getSetting('language', 'es')), '');
     return;
   }
 
-  const project = getProject(user.id, currentProjectId);
+  const project = getProject(user.id, window.currentProjectId);
   if (!project) {
     showToast('error', 'Proyecto no encontrado', '', 3000);
     return;
   }
 
-  const chats = getChats(user.id, currentProjectId);
+  const chats = getChats(user.id, window.currentProjectId);
   const lang = getSetting('language', 'es');
 
   let content, filename;
@@ -82,61 +82,110 @@ function exportAsMarkdown(project, chats, user) {
 `;
 
   // Header
-  md += `# 🎮 ${project.name}\n\n`;
-  md += `> **Género:** ${project.genre}  \n`;
-  md += `> **Creado:** ${new Date(project.createdAt).toLocaleDateString(lang)}  \n`;
-  md += `> **Exportado:** ${new Date(now).toLocaleDateString(lang)}  \n`;
-  md += `> **Por:** ${user.email}  \n\n`;
+  md += `# 🎮 ${project.name}
+
+`;
+  md += `> **Género:** ${project.genre}  
+`;
+  md += `> **Creado:** ${new Date(project.createdAt).toLocaleDateString(lang)}  
+`;
+  md += `> **Exportado:** ${new Date(now).toLocaleDateString(lang)}  
+`;
+  md += `> **Por:** ${user.email}  
+
+`;
 
   // Description
   if (project.description) {
-    md += `## 📋 Descripción\n\n${project.description}\n\n`;
+    md += `## 📋 Descripción
+
+${project.description}
+
+`;
   }
 
   // Project Context Block (optimized for AI consumption)
-  md += `---\n\n`;
-  md += `## 🤖 Contexto para IA\n\n`;
-  md += `Este documento contiene el contexto completo del proyecto de videojuego indie **"${project.name}"**, incluyendo todas las conversaciones de diseño, análisis y decisiones tomadas con RabAI.\n\n`;
-  md += `**Instrucciones para la IA:** Lee todo el contexto antes de responder. Mantén la coherencia con las decisiones previas. Respeta el scope y recursos del equipo.\n\n`;
+  md += `---
+
+`;
+  md += `## 🤖 Contexto para IA
+
+`;
+  md += `Este documento contiene el contexto completo del proyecto de videojuego indie **"${project.name}"**, incluyendo todas las conversaciones de diseño, análisis y decisiones tomadas con RabAI.
+
+`;
+  md += `**Instrucciones para la IA:** Lee todo el contexto antes de responder. Mantén la coherencia con las decisiones previas. Respeta el scope y recursos del equipo.
+
+`;
 
   // Chats
-  md += `---\n\n`;
-  md += `## 💬 Conversaciones (${chats.length})\n\n`;
+  md += `---
+
+`;
+  md += `## 💬 Conversaciones (${chats.length})
+
+`;
 
   if (chats.length === 0) {
-    md += `_No hay conversaciones registradas._\n\n`;
+    md += `_No hay conversaciones registradas._
+
+`;
   } else {
     for (let i = 0; i < chats.length; i++) {
       const chat = chats[i];
-      md += `### ${i + 1}. ${chat.name}\n\n`;
-      md += `**Creada:** ${new Date(chat.createdAt).toLocaleDateString(lang)}  \n`;
-      md += `**Mensajes:** ${chat.messages?.length || 0}\n\n`;
+      md += `### ${i + 1}. ${chat.name}
+
+`;
+      md += `**Creada:** ${new Date(chat.createdAt).toLocaleDateString(lang)}  
+`;
+      md += `**Mensajes:** ${chat.messages?.length || 0}
+
+`;
 
       if (chat.messages && chat.messages.length > 0) {
         for (const msg of chat.messages) {
           const role = msg.role === 'user' ? '👤 Usuario' : '🤖 RabAI';
           const time = new Date(msg.timestamp).toLocaleString(lang);
-          md += `**${role}** *(${time})*\n\n`;
-          md += `${msg.content}\n\n`;
-          md += `---\n\n`;
+          md += `**${role}** *(${time})*
+
+`;
+          md += `${msg.content}
+
+`;
+          md += `---
+
+`;
         }
       } else {
-        md += `_Sin mensajes._\n\n`;
+        md += `_Sin mensajes._
+
+`;
       }
     }
   }
 
   // Summary / Stats
-  md += `## 📊 Resumen del Proyecto\n\n`;
-  md += `- **Total de conversaciones:** ${chats.length}\n`;
-  md += `- **Total de mensajes:** ${chats.reduce((sum, c) => sum + (c.messages?.length || 0), 0)}\n`;
-  md += `- **Comandos usados:** ${extractCommandsUsed(chats)}\n`;
-  md += `- **Última actividad:** ${getLastActivity(chats, lang)}\n\n`;
+  md += `## 📊 Resumen del Proyecto
+
+`;
+  md += `- **Total de conversaciones:** ${chats.length}
+`;
+  md += `- **Total de mensajes:** ${chats.reduce((sum, c) => sum + (c.messages?.length || 0), 0)}
+`;
+  md += `- **Comandos usados:** ${extractCommandsUsed(chats)}
+`;
+  md += `- **Última actividad:** ${getLastActivity(chats, lang)}
+
+`;
 
   // Footer
-  md += `---\n\n`;
-  md += `*Exportado con ❤️ desde [RabAI](https://rabai.vercel.app) — IndieDev Edition v${APP_VERSION}*\n`;
-  md += `*RabbitGamesStudio™ / RGS Labs™*\n`;
+  md += `---
+
+`;
+  md += `*Exportado con ❤️ desde [RabAI](https://rabai.vercel.app) — IndieDev Edition v${APP_VERSION}*
+`;
+  md += `*RabbitGamesStudio™ / RGS Labs™*
+`;
 
   return md;
 }
@@ -196,38 +245,65 @@ function exportAsTXT(project, chats, user) {
   const lang = getSetting('language', 'es');
   let txt = '';
 
-  txt += `===============================================\n`;
-  txt += `  ${project.name}\n`;
-  txt += `  ${project.genre}\n`;
-  txt += `===============================================\n\n`;
+  txt += `===============================================
+`;
+  txt += `  ${project.name}
+`;
+  txt += `  ${project.genre}
+`;
+  txt += `===============================================
+
+`;
 
   if (project.description) {
-    txt += `DESCRIPCION:\n${project.description}\n\n`;
+    txt += `DESCRIPCION:
+${project.description}
+
+`;
   }
 
-  txt += `CONTEXTO PARA IA:\n`;
-  txt += `Este es el proyecto indie "${project.name}".\n`;
-  txt += `A continuacion todas las conversaciones de diseno.\n\n`;
+  txt += `CONTEXTO PARA IA:
+`;
+  txt += `Este es el proyecto indie "${project.name}".
+`;
+  txt += `A continuacion todas las conversaciones de diseno.
 
-  txt += `-----------------------------------------------\n`;
-  txt += `CONVERSACIONES (${chats.length}):\n`;
-  txt += `-----------------------------------------------\n\n`;
+`;
+
+  txt += `-----------------------------------------------
+`;
+  txt += `CONVERSACIONES (${chats.length}):
+`;
+  txt += `-----------------------------------------------
+
+`;
 
   for (const chat of chats) {
-    txt += `=== ${chat.name} ===\n\n`;
+    txt += `=== ${chat.name} ===
+
+`;
     if (chat.messages) {
       for (const msg of chat.messages) {
         const label = msg.role === 'user' ? 'USUARIO' : 'RABAI';
-        txt += `[${label}]:\n${msg.content}\n\n`;
+        txt += `[${label}]:
+${msg.content}
+
+`;
       }
     }
-    txt += `---\n\n`;
+    txt += `---
+
+`;
   }
 
-  txt += `===============================================\n`;
-  txt += `Exportado desde RabAI v${APP_VERSION}\n`;
-  txt += `${new Date().toLocaleDateString(lang)}\n`;
-  txt += `===============================================\n`;
+  txt += `===============================================
+`;
+  txt += `Exportado desde RabAI v${APP_VERSION}
+`;
+  txt += `${new Date().toLocaleDateString(lang)}
+`;
+  txt += `===============================================
+`;
 
   return txt;
 }
@@ -280,13 +356,13 @@ function getLastActivity(chats, lang) {
 function downloadFile(content, filename, mimeType) {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
-  
+
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
   document.body.appendChild(a);
   a.click();
-  
+
   setTimeout(() => {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
