@@ -50,7 +50,7 @@ async function setUser(user) {
   renderUserInfo(user, currentProfile, getSetting('language', 'es'));
   showProjectsScreen();
   loadProjects();
-  if (typeof updateProjSettings === 'function') updateProjSettings();
+  // Removed: updateProjSettings() — function doesn't exist
   return currentProfile;
 }
 
