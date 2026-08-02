@@ -60,7 +60,7 @@ function initCursor() {
   }
 
   document.body.style.cursor = 'none';
-  
+
   document.addEventListener('mousemove', onCursorMove);
   document.addEventListener('mousedown', () => cursorEl?.classList.add('click'));
   document.addEventListener('mouseup', () => cursorEl?.classList.remove('click'));
@@ -111,9 +111,9 @@ function isTouchDevice() {
 function initSidebar() {
   const sidebar = document.getElementById('sidebar');
   const collapsed = getSetting('sidebarCollapsed', false);
-  
+
   if (collapsed) sidebar.classList.add('collapsed');
-  
+
   document.getElementById('sidebar-toggle')?.addEventListener('click', toggleSidebar);
 }
 
@@ -125,7 +125,7 @@ function toggleSidebar() {
   return collapsed;
 }
 
-function renderChatList(chats, activeChatId, lang = 'es') {
+function renderChatList(chats, activeChatId, lang) {
   const container = document.getElementById('chat-list');
   if (!container) return;
 
@@ -262,7 +262,7 @@ function hideLoading() {
 // 7. Topbar
 // ─────────────────────────────────────────────────────────────────────────
 
-function updateTopbar(title, subtitle = '') {
+function updateTopbar(title, subtitle) {
   const titleEl = document.getElementById('topbar-title');
   const subtitleEl = document.getElementById('topbar-subtitle');
   if (titleEl) titleEl.textContent = title;
@@ -273,7 +273,7 @@ function updateTopbar(title, subtitle = '') {
 // 8. User Info in Sidebar
 // ─────────────────────────────────────────────────────────────────────────
 
-function renderUserInfo(user, profile, lang = 'es') {
+function renderUserInfo(user, profile, lang) {
   const container = document.getElementById('sidebar-user');
   if (!container) return;
 
@@ -293,30 +293,62 @@ function renderUserInfo(user, profile, lang = 'es') {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// 9. Screen Switching
+// 9. Screen Switching — FIXED
 // ─────────────────────────────────────────────────────────────────────────
 
 function showScreen(screenId) {
+  // Hide all screens
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+
+  // Show the target screen
   const screen = document.getElementById(screenId);
-  if (screen) screen.classList.remove('hidden');
+  if (screen) {
+    screen.classList.remove('hidden');
+  }
+
+  // Ensure #app is visible when showing any screen inside it
+  const app = document.getElementById('app');
+  if (app && (screenId === 'projects-screen' || screenId === 'chat-interface')) {
+    app.classList.remove('hidden');
+  }
 }
 
 function showLoginScreen() {
-  showScreen('login-screen');
+  // Hide app, show login
+  const app = document.getElementById('app');
+  if (app) app.classList.add('hidden');
+
+  const loginScreen = document.getElementById('login-screen');
+  if (loginScreen) loginScreen.classList.remove('hidden');
 }
 
 function showProjectsScreen() {
-  showScreen('projects-screen');
-  document.getElementById('chat-interface')?.classList.add('hidden');
+  const app = document.getElementById('app');
+  if (app) app.classList.remove('hidden');
+
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+
+  const projectsScreen = document.getElementById('projects-screen');
+  if (projectsScreen) projectsScreen.classList.remove('hidden');
+
+  const chatInterface = document.getElementById('chat-interface');
+  if (chatInterface) {
+    chatInterface.classList.add('hidden');
+    chatInterface.style.display = 'none';
+  }
 }
 
 function showChatInterface() {
-  document.getElementById('projects-screen')?.classList.add('hidden');
+  const app = document.getElementById('app');
+  if (app) app.classList.remove('hidden');
+
+  const projectsScreen = document.getElementById('projects-screen');
+  if (projectsScreen) projectsScreen.classList.add('hidden');
+
   const chatInterface = document.getElementById('chat-interface');
   if (chatInterface) {
     chatInterface.classList.remove('hidden');
-    chatInterface.classList.add('flex');
+    chatInterface.style.display = 'flex';
   }
 }
 
@@ -324,7 +356,7 @@ function showChatInterface() {
 // 10. Command Autocomplete
 // ─────────────────────────────────────────────────────────────────────────
 
-function showCommandAutocomplete(input, lang = 'es') {
+function showCommandAutocomplete(input, lang) {
   const container = document.getElementById('cmd-autocomplete');
   if (!container) return;
 
@@ -410,7 +442,7 @@ function showBanScreen(seconds) {
 
   screen.classList.remove('hidden');
   const timerEl = document.getElementById('ban-timer');
-  
+
   const interval = setInterval(() => {
     seconds--;
     if (timerEl) timerEl.textContent = seconds + 's';
