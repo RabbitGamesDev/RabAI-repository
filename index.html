@@ -48,9 +48,14 @@
   <div id="login-screen" class="screen hidden">
     <div class="login-container">
       <div class="login-logo">
-        <svg viewBox="0 0 64 64" fill="none" width="64" height="64">
-          <circle cx="32" cy="32" r="28" fill="var(--accent-glow)"/>
-          <path d="M32 12c-6 0-10 4-12 10-3-1-6 0-8 3s-1 8 3 10c-1 4 0 10 6 13 3 2 8 2 11 0 6-3 8-9 6-13 4-2 5-6 3-10s-5-4-8-3c-2-6-6-10-12-10z" fill="var(--accent)"/>
+        <svg viewBox="0 0 80 80" fill="none" width="80" height="80">
+          <circle cx="40" cy="40" r="36" fill="var(--accent-glow)"/>
+          <path class="rabbit-ear left" d="M28 20c-4-12-8-16-12-12s-4 12 0 20 8 8 12 4" fill="var(--accent)"/>
+          <path class="rabbit-ear right" d="M52 20c4-12 8-16 12-12s4 12 0 20-8 8-12 4" fill="var(--accent)"/>
+          <ellipse cx="40" cy="48" rx="18" ry="16" fill="var(--accent)"/>
+          <circle cx="34" cy="44" r="3" fill="var(--bg-primary)"/>
+          <circle cx="46" cy="44" r="3" fill="var(--bg-primary)"/>
+          <path d="M36 52q4 3 8 0" stroke="var(--bg-primary)" stroke-width="2" fill="none"/>
         </svg>
         <h1>Rab<span>AI</span></h1>
         <p>IndieDev Edition — Tu asistente IA para videojuegos</p>
@@ -112,9 +117,14 @@
     <aside id="sidebar">
       <div class="sidebar-header">
         <div class="sidebar-brand">
-          <svg viewBox="0 0 32 32" fill="none" width="32" height="32">
-            <circle cx="16" cy="16" r="14" fill="var(--accent-glow)"/>
-            <path d="M16 6c-3 0-5 2-6 5-2-1-3 0-4 2s0 4 2 5c-1 2 0 5 3 7 2 1 4 1 6 0 3-2 4-5 3-7 2-1 3-3 2-5s-3-3-4-2c-1-3-3-5-6-5z" fill="var(--accent)"/>
+          <svg viewBox="0 0 80 80" fill="none" width="32" height="32">
+            <circle cx="40" cy="40" r="36" fill="var(--accent-glow)"/>
+            <path d="M28 20c-4-12-8-16-12-12s-4 12 0 20 8 8 12 4" fill="var(--accent)"/>
+            <path d="M52 20c4-12 8-16 12-12s4 12 0 20-8 8-12 4" fill="var(--accent)"/>
+            <ellipse cx="40" cy="48" rx="18" ry="16" fill="var(--accent)"/>
+            <circle cx="34" cy="44" r="3" fill="var(--bg-primary)"/>
+            <circle cx="46" cy="44" r="3" fill="var(--bg-primary)"/>
+            <path d="M36 52q4 3 8 0" stroke="var(--bg-primary)" stroke-width="2" fill="none"/>
           </svg>
           <span class="sidebar-brand-text">Rab<span>AI</span></span>
         </div>
@@ -497,17 +507,47 @@
   <!-- ═══════════════════════════════════════════════════════════════════════
        6. SCRIPTS (load order matters!)
        ═══════════════════════════════════════════════════════════════════════ -->
-  <script src="js/config.js"></script>
-  <script src="js/i18n.js"></script>
-  <script src="js/commands.js"></script>
-  <script src="js/moderation.js"></script>
-  <script src="js/storage.js"></script>
-  <script src="js/ui.js"></script>
-  <script src="js/chat.js"></script>
-  <script src="js/auth.js"></script>
-  <script src="js/projects.js"></script>
-  <script src="js/export.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/config.js?v=5.0.1"></script>
+  <script src="js/i18n.js?v=5.0.1"></script>
+  <script>
+    // Fallback: ensure t() is always available even if i18n.js fails partially
+    if (typeof t !== 'function') {
+      window.t = function(key, lang, replacements) {
+        var dict = {
+          'errorRequired': 'Este campo es obligatorio',
+          'errorEmail': 'Introduce un correo válido',
+          'errorPassword': 'Mínimo 6 caracteres',
+          'errorPasswordMatch': 'Las contraseñas no coinciden',
+          'errorAuth': 'Error de autenticación',
+          'errorGeneric': 'Algo salió mal. Intenta de nuevo.',
+          'welcomeBack': 'Bienvenido de vuelta',
+          'logout': 'Cerrar sesión',
+          'logoutConfirm': '¿Seguro que quieres cerrar sesión?',
+          'save': 'Guardar',
+          'cancel': 'Cancelar',
+          'delete': 'Eliminar',
+          'newProject': 'Nuevo Proyecto',
+          'noProjectSelected': 'Selecciona un proyecto',
+          'projects': 'Mis Proyectos',
+          'created': 'creado',
+          'planFree': 'Gratis',
+          'planPro': 'Pro',
+          'planAdmin': 'Admin'
+        };
+        return dict[key] || key;
+      };
+      console.warn('i18n fallback loaded');
+    }
+  </script>
+  <script src="js/commands.js?v=5.0.1"></script>
+  <script src="js/moderation.js?v=5.0.1"></script>
+  <script src="js/storage.js?v=5.0.1"></script>
+  <script src="js/ui.js?v=5.0.1"></script>
+  <script src="js/chat.js?v=5.0.1"></script>
+  <script src="js/auth.js?v=5.0.1"></script>
+  <script src="js/projects.js?v=5.0.1"></script>
+  <script src="js/export.js?v=5.0.1"></script>
+  <script src="js/app.js?v=5.0.1"></script>
 
 </body>
 </html>
