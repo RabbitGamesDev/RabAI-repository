@@ -290,7 +290,7 @@ async function onRegisterSubmit(e) {
 
 function showFormError(el, message) {
   if (!el) return;
-  el.textContent = message;
+  el.textContent = message || 'Error';
   el.classList.add('visible');
 }
 
