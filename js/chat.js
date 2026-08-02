@@ -8,7 +8,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 let currentChatId = null;
-let currentProjectId = null;
+// currentProjectId is declared in app.js as window.currentProjectId — DO NOT redeclare here
 let isSending = false;
 let abortController = null;
 
@@ -102,27 +102,27 @@ async function sendMsg() {
     if (modCheck.banned) {
       showBanScreen(modCheck.remaining);
     } else {
-      showToast('warning', t('warning'), modCheck.message, 3000);
+      showToast('warning', t('warning', getSetting('language', 'es')), modCheck.message, 3000);
     }
     return;
   }
 
   // Check auth
-  const user = getCurrentUser?.();
+  const user = getCurrentUser();
   if (!user) {
     showToast('error', t('errorAuth', getSetting('language', 'es')), '');
     return;
   }
 
   // Check project
-  if (!currentProjectId) {
+  if (!window.currentProjectId) {
     showToast('warning', t('noProjectSelected', getSetting('language', 'es')), '');
     return;
   }
 
   // Create chat if needed
   if (!currentChatId) {
-    const newChat = createChat(user.id, currentProjectId, { name: 'Nueva conversación' });
+    const newChat = createChat(user.id, window.currentProjectId, { name: 'Nueva conversación' });
     currentChatId = newChat.id;
     refreshChatList();
   }
@@ -130,7 +130,7 @@ async function sendMsg() {
   // Add user message to UI
   const chatArea = document.getElementById('chat-area');
   const userMsg = { role: 'user', content: text, timestamp: new Date().toISOString() };
-  addMessage(user.id, currentProjectId, currentChatId, userMsg);
+  addMessage(user.id, window.currentProjectId, currentChatId, userMsg);
   renderMessage(userMsg, chatArea);
 
   // Clear input
@@ -143,7 +143,7 @@ async function sendMsg() {
 
   // Determine if command
   const command = getCommandByInput(text);
-  const messages = buildMessages(user.id, currentProjectId, currentChatId, command);
+  const messages = buildMessages(user.id, window.currentProjectId, currentChatId, command);
 
   isSending = true;
   updateSendButton(true);
@@ -174,11 +174,11 @@ async function sendMsg() {
     const aiContent = data.choices?.[0]?.message?.content || 'Error: No response';
 
     const aiMsg = { role: 'assistant', content: aiContent, timestamp: new Date().toISOString() };
-    addMessage(user.id, currentProjectId, currentChatId, aiMsg);
+    addMessage(user.id, window.currentProjectId, currentChatId, aiMsg);
     renderMessage(aiMsg, chatArea);
 
     // Auto-name chat on first exchange
-    autoNameChat(user.id, currentProjectId, currentChatId);
+    autoNameChat(user.id, window.currentProjectId, currentChatId);
 
   } catch (err) {
     hideTyping();
@@ -245,7 +245,7 @@ function getSystemPrompt(command) {
 }
 
 function getModelForUser() {
-  const profile = getCurrentProfile?.();
+  const profile = getCurrentProfile();
   const isPro = profile?.is_admin || profile?.plan === 'pro';
   return isPro ? MODELS.pro.id : MODELS.free.id;
 }
@@ -274,9 +274,9 @@ async function autoNameChat(userId, projectId, chatId) {
 }
 
 function refreshChatList() {
-  const user = getCurrentUser?.();
-  if (!user || !currentProjectId) return;
-  const chats = getChats(user.id, currentProjectId);
+  const user = getCurrentUser();
+  if (!user || !window.currentProjectId) return;
+  const chats = getChats(user.id, window.currentProjectId);
   renderChatList(chats, currentChatId, getSetting('language', 'es'));
 }
 
@@ -365,10 +365,10 @@ function renderMessageActions(msgIndex, feedback) {
 // ─────────────────────────────────────────────────────────────────────────
 
 function submitFeedback(msgIndex, type) {
-  const user = getCurrentUser?.();
-  if (!user || !currentProjectId || !currentChatId) return;
+  const user = getCurrentUser();
+  if (!user || !window.currentProjectId || !currentChatId) return;
 
-  updateMessageFeedback(user.id, currentProjectId, currentChatId, msgIndex, type);
+  updateMessageFeedback(user.id, window.currentProjectId, currentChatId, msgIndex, type);
 
   // Update UI
   const msgEl = document.querySelector(`.message[data-msg-index="${msgIndex}"]`);
@@ -381,10 +381,10 @@ function submitFeedback(msgIndex, type) {
 }
 
 function copyMessage(msgIndex) {
-  const user = getCurrentUser?.();
-  if (!user || !currentProjectId || !currentChatId) return;
+  const user = getCurrentUser();
+  if (!user || !window.currentProjectId || !currentChatId) return;
 
-  const chat = getChat(user.id, currentProjectId, currentChatId);
+  const chat = getChat(user.id, window.currentProjectId, currentChatId);
   const msg = chat?.messages?.[msgIndex];
   if (!msg) return;
 
@@ -434,14 +434,14 @@ function updateSendButton(loading) {
 
 function selectChat(chatId) {
   currentChatId = chatId;
-  const user = getCurrentUser?.();
-  if (!user || !currentProjectId) return;
+  const user = getCurrentUser();
+  if (!user || !window.currentProjectId) return;
 
-  const chat = getChat(user.id, currentProjectId, chatId);
+  const chat = getChat(user.id, window.currentProjectId, chatId);
   if (!chat) return;
 
   // Save last chat
-  setLastChat(user.id, currentProjectId, chatId);
+  setLastChat(user.id, window.currentProjectId, chatId);
 
   // Update UI
   refreshChatList();
@@ -524,8 +524,8 @@ function renderWelcomeScreen() {
 // ─────────────────────────────────────────────────────────────────────────
 
 function createNewChat() {
-  const user = getCurrentUser?.();
-  if (!user || !currentProjectId) {
+  const user = getCurrentUser();
+  if (!user || !window.currentProjectId) {
     showToast('warning', t('noProjectSelected', getSetting('language', 'es')), '');
     return;
   }
@@ -533,40 +533,42 @@ function createNewChat() {
   const name = prompt(t('chatNamePlaceholder', getSetting('language', 'es')));
   if (!name) return;
 
-  const chat = createChat(user.id, currentProjectId, { name: name.trim() });
+  const chat = createChat(user.id, window.currentProjectId, { name: name.trim() });
   currentChatId = chat.id;
   refreshChatList();
   selectChat(chat.id);
 }
 
 function renameChat(chatId) {
-  const user = getCurrentUser?.();
-  if (!user || !currentProjectId) return;
+  const user = getCurrentUser();
+  if (!user || !window.currentProjectId) return;
 
-  const chat = getChat(user.id, currentProjectId, chatId);
+  const chat = getChat(user.id, window.currentProjectId, chatId);
   if (!chat) return;
 
   const newName = prompt(t('renameChat', getSetting('language', 'es')), chat.name);
   if (!newName || newName.trim() === '') return;
 
-  updateChat(user.id, currentProjectId, chatId, { name: newName.trim() });
+  updateChat(user.id, window.currentProjectId, chatId, { name: newName.trim() });
   refreshChatList();
   if (currentChatId === chatId) {
     updateTopbar(newName.trim(), t('aiName', getSetting('language', 'es')));
   }
 }
 
-function deleteChat(chatId) {
-  const user = getCurrentUser?.();
-  if (!user || !currentProjectId) return;
+// RENAMED from deleteChat to deleteChatUI to avoid conflict with storage.js deleteChat
+function deleteChatUI(chatId) {
+  const user = getCurrentUser();
+  if (!user || !window.currentProjectId) return;
 
-  const chat = getChat(user.id, currentProjectId, chatId);
+  const chat = getChat(user.id, window.currentProjectId, chatId);
   if (!chat) return;
 
   const lang = getSetting('language', 'es');
   if (!confirm(t('deleteChatConfirm', lang))) return;
 
-  deleteChat(user.id, currentProjectId, chatId);
+  // Call storage function
+  deleteChat(user.id, window.currentProjectId, chatId);
 
   if (currentChatId === chatId) {
     currentChatId = null;
@@ -578,6 +580,10 @@ function deleteChat(chatId) {
   refreshChatList();
 }
 
+// Expose to window for onclick handlers
+window.deleteChat = deleteChatUI;
+window.renameChat = renameChat;
+
 // ─────────────────────────────────────────────────────────────────────────
 // 10. Export
 // ─────────────────────────────────────────────────────────────────────────
@@ -586,8 +592,8 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     initChat, sendMsg, selectChat,
     renderMessage, renderWelcomeScreen,
-    createNewChat, renameChat, deleteChat,
+    createNewChat, renameChat, deleteChatUI,
     submitFeedback, copyMessage,
-    currentChatId, currentProjectId
+    currentChatId
   };
 }
