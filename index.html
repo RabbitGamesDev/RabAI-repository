@@ -6,17 +6,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="RabAI - AI Assistant for Indie Game Developers">
   <title>RabAI v5.0 — IndieDev Edition</title>
-  
+
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  
+
   <!-- Styles -->
   <link rel="stylesheet" href="css/styles.css">
-  
+
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<base target="_blank">
 </head>
 <body>
 
@@ -44,7 +45,7 @@
   <!-- ═══════════════════════════════════════════════════════════════════════
        2. LOGIN SCREEN
        ═══════════════════════════════════════════════════════════════════════ -->
-  <div id="login-screen" class="screen">
+  <div id="login-screen" class="screen hidden">
     <div class="login-container">
       <div class="login-logo">
         <svg viewBox="0 0 64 64" fill="none" width="64" height="64">
@@ -54,13 +55,13 @@
         <h1>Rab<span>AI</span></h1>
         <p>IndieDev Edition — Tu asistente IA para videojuegos</p>
       </div>
-      
+
       <div class="login-card">
         <div class="login-tabs">
           <button class="login-tab active" id="login-tab">Iniciar sesión</button>
           <button class="login-tab" id="register-tab">Crear cuenta</button>
         </div>
-        
+
         <!-- Login Form -->
         <form class="login-form" id="login-form">
           <div class="form-group">
@@ -74,7 +75,7 @@
           <div class="form-error"></div>
           <button type="submit" class="login-submit">Entrar</button>
         </form>
-        
+
         <!-- Register Form -->
         <form class="login-form hidden" id="register-form">
           <div class="form-group">
@@ -93,7 +94,7 @@
           <button type="submit" class="login-submit">Crear cuenta</button>
         </form>
       </div>
-      
+
       <div class="login-footer">
         RabbitGamesStudio™ / RGS Labs™ — v5.0
       </div>
@@ -123,7 +124,7 @@
           </svg>
         </button>
       </div>
-      
+
       <div class="sidebar-content">
         <div class="sidebar-section">
           <div class="sidebar-section-title">
@@ -135,7 +136,7 @@
           </div>
         </div>
       </div>
-      
+
       <div class="sidebar-footer">
         <div class="sidebar-user" id="sidebar-user">
           <!-- User info rendered here -->
@@ -211,7 +212,7 @@
            3.4 CHAT INTERFACE
            ───────────────────────────────────────────────────────────────── -->
       <div id="chat-interface" class="hidden" style="display: none; flex-direction: column; flex: 1;">
-        
+
         <!-- Chat Area -->
         <div id="chat-area">
           <!-- Messages / Welcome rendered here -->
@@ -308,7 +309,7 @@
           <div class="form-row">
             <div class="form-group">
               <label>Género</label>
-              <select name="genre">
+              <select name="genre" id="project-settings-genre">
                 <!-- Populated dynamically -->
               </select>
             </div>
